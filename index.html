@@ -1,0 +1,1897 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>כלי הנדסה — מחלקת הנדסת מכונות</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>body{margin:0;background:#020509;}</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+const { useState, useMemo } = React;
+
+// ── GLOBAL STYLES ─────────────────────────────────────────────
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Barlow:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#020509}
+  ::-webkit-scrollbar-thumb{background:#1a3860;border-radius:3px}
+  input,select,button{outline:none;-webkit-tap-highlight-color:transparent;}
+  input[type=range]{cursor:pointer;height:4px;border-radius:2px;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;cursor:pointer;}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  input[type=number]{-moz-appearance:textfield;}
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .tbl-wrap::-webkit-scrollbar{height:3px;}
+
+  @keyframes gridScroll{from{background-position:0 0}to{background-position:40px 40px}}
+  @keyframes rotateRing{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  @keyframes rotateRev{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+  .tool-card{animation:fadeInUp .4s ease both;}
+  .tool-card:nth-child(1){animation-delay:.04s}.tool-card:nth-child(2){animation-delay:.08s}
+  .tool-card:nth-child(3){animation-delay:.12s}.tool-card:nth-child(4){animation-delay:.16s}
+  .tool-card:nth-child(5){animation-delay:.20s}.tool-card:nth-child(6){animation-delay:.24s}
+  .tool-card:nth-child(7){animation-delay:.28s}.tool-card:nth-child(8){animation-delay:.32s}
+  .tool-card:nth-child(9){animation-delay:.36s}.tool-card:nth-child(10){animation-delay:.40s}
+  .tool-card:nth-child(11){animation-delay:.44s}.tool-card:nth-child(12){animation-delay:.48s}
+  .tool-card:nth-child(13){animation-delay:.52s}
+  .res-anim{animation:fadeIn .25s ease;}
+
+  /* ── Responsive ───────────────────────────────── */
+  @media(max-width:900px){
+    .r-two-col{grid-template-columns:1fr!important;}
+    .r-bear{grid-template-columns:1fr!important;}
+    .r-tool-grid{grid-template-columns:1fr 1fr!important;}
+  }
+  @media(max-width:768px){
+    .r-tool-grid{grid-template-columns:1fr 1fr!important;}
+    .r-k4{grid-template-columns:1fr 1fr!important;}
+    .r-k3{grid-template-columns:1fr!important;}
+    .r-notes{grid-template-columns:1fr!important;}
+    .r-hero{padding:36px 20px 28px!important;}
+    .r-h1{font-size:42px!important;line-height:1.1!important;}
+    .r-body{padding:20px 16px!important;}
+    .r-head{padding:0 16px!important;}
+    .r-filter{padding:16px 16px 0!important;}
+    .r-stat{flex-wrap:wrap!important;gap:14px!important;padding:16px 18px!important;justify-content:center!important;}
+    .r-stat-div{display:none!important;}
+    .r-hero-title{gap:10px!important;}
+    .r-hero-bar{height:52px!important;}
+  }
+  @media(max-width:480px){
+    .r-tool-grid{grid-template-columns:1fr!important;}
+    .r-k4{grid-template-columns:1fr 1fr!important;}
+    .r-h1{font-size:34px!important;}
+    .r-head-title{font-size:16px!important;}
+  }
+`;
+
+// ── PALETTE ───────────────────────────────────────────────────
+const C={
+  bg:'#020509',surf:'#060d1b',card:'#091525',cardH:'#0e1e38',
+  border:'#0d2040',borderB:'#1a3d6e',borderBright:'#2a5a9e',
+  blue:'#00a8ff',orange:'#ff6620',green:'#00e87c',red:'#ff2244',
+  yellow:'#ffcc00',white:'#c8dfff',muted:'#3d5a80',dim:'#112040',
+};
+
+// ── SHARED COMPONENTS ─────────────────────────────────────────
+const Mono=({c,s=14,children})=>(
+  <span style={{fontFamily:"'JetBrains Mono',monospace",color:c||C.blue,fontSize:s,fontWeight:600}}>{children}</span>
+);
+
+const Badge=({children,color=C.blue,size=10})=>(
+  <span style={{background:`${color}22`,color,border:`1px solid ${color}44`,borderRadius:4,
+    padding:'2px 8px',fontSize:size,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',whiteSpace:'nowrap'}}>
+    {children}
+  </span>
+);
+
+const Card=({children,style={},glow,accent,className=''})=>(
+  <div className={className} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,
+    boxShadow:glow?`0 0 28px ${glow}`:undefined,
+    borderTop:accent?`2px solid ${accent}`:undefined,...style}}>
+    {children}
+  </div>
+);
+
+const ResultBig=({label,value,unit,color=C.blue,sub})=>(
+  <div className="res-anim" style={{background:`${color}0f`,border:`1px solid ${color}33`,borderRadius:12,
+    padding:'20px 22px',marginBottom:12,boxShadow:`inset 0 1px 0 ${color}22`}}>
+    <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:'.12em',marginBottom:6}}>{label}</div>
+    <div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap'}}>
+      <span style={{fontFamily:"'Rajdhani',sans-serif",color,fontSize:44,fontWeight:700,lineHeight:1}}>{value}</span>
+      {unit&&<span style={{color,fontSize:16,opacity:.7}}>{unit}</span>}
+    </div>
+    {sub&&<div style={{color:C.muted,fontSize:11,marginTop:4}}>{sub}</div>}
+  </div>
+);
+
+const ResultSm=({label,value,unit,color=C.blue})=>(
+  <div className="res-anim" style={{background:`${color}0a`,border:`1px solid ${color}22`,borderRadius:10,padding:'12px 14px'}}>
+    <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:'.1em',marginBottom:4}}>{label}</div>
+    <div style={{display:'flex',alignItems:'baseline',gap:5,flexWrap:'wrap'}}>
+      <Mono c={color} s={20}>{value}</Mono>
+      {unit&&<span style={{color,fontSize:12,opacity:.6}}>{unit}</span>}
+    </div>
+  </div>
+);
+
+const Inp=({label,value,onChange,unit,min,max,step="any"})=>(
+  <div style={{marginBottom:14}}>
+    <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:'.07em',marginBottom:6}}>{label}</div>
+    <div style={{display:'flex',alignItems:'center',background:C.surf,border:`1px solid ${C.borderB}`,
+      borderRadius:9,overflow:'hidden',boxShadow:`inset 0 2px 4px ${C.bg}`}}>
+      <input type="number" value={value} onChange={e=>onChange(e.target.value)}
+        onFocus={e=>{const t=e.target;setTimeout(()=>t.select(),0);}}
+        onClick={e=>{const t=e.target;setTimeout(()=>t.select(),0);}}
+        min={min} max={max} step={step}
+        style={{flex:1,background:'transparent',color:C.white,padding:'11px 14px',fontSize:15,
+          fontFamily:"'JetBrains Mono',monospace",border:'none'}}/>
+      {unit&&<span style={{color:C.muted,padding:'0 14px',fontSize:12,borderRight:`1px solid ${C.border}`,
+        paddingTop:11,paddingBottom:11,background:`${C.bg}88`}}>{unit}</span>}
+    </div>
+  </div>
+);
+
+// ── SLIDER WITH NUMBER INPUT ──────────────────────────────────
+const Slider=({label,value,onChange,min,max,step=1,color=C.blue,unit})=>{
+  const [txt,setTxt]=useState(String(value));
+  // סנכרון נכון: כשה-parent משנה value מבחוץ, עדכן txt
+  const [synced,setSynced]=useState(value);
+  if(value!==synced){setSynced(value);setTxt(String(value));}
+
+  const pct=Math.min(100,Math.max(0,((value-min)/(max-min)*100))).toFixed(1);
+  const sel=e=>{const t=e.target;setTimeout(()=>t.select(),0);};
+  const handleSlider=e=>{const v=parseFloat(e.target.value);onChange(v);setTxt(String(v));};
+  const handleType=e=>{
+    setTxt(e.target.value);
+    const n=parseFloat(e.target.value);
+    if(!isNaN(n))onChange(Math.min(Math.max(n,min),max));
+  };
+  const handleBlur=()=>{
+    const n=parseFloat(txt);
+    if(isNaN(n)||n<min){onChange(min);setTxt(String(min));}
+    else if(n>max){onChange(max);setTxt(String(max));}
+    else{const r=Math.round(n*10000)/10000;setTxt(String(r));}
+  };
+
+  return(
+    <div style={{marginBottom:18}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:7,gap:8}}>
+        <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:'.07em',flex:1,minWidth:0,
+          overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{label}</div>
+        <div style={{display:'flex',alignItems:'center',gap:5,flexShrink:0}}>
+          <input type="number" value={txt} onChange={handleType} onBlur={handleBlur}
+            onFocus={sel} onClick={sel} min={min} max={max} step={step}
+            style={{width:72,background:`${color}11`,border:`1px solid ${color}55`,borderRadius:7,
+              color,padding:'5px 8px',fontSize:13,fontFamily:"'JetBrains Mono',monospace",
+              fontWeight:600,textAlign:'center',transition:'border-color .2s'}}/>
+          {unit&&<span style={{color,fontSize:11,opacity:.7,minWidth:20,textAlign:'left'}}>{unit}</span>}
+        </div>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={handleSlider}
+        style={{width:'100%',accentColor:color,cursor:'pointer',
+          background:`linear-gradient(90deg,${color} ${pct}%,${C.borderB} ${pct}%)`}}/>
+      <div style={{display:'flex',justifyContent:'space-between',marginTop:2}}>
+        <span style={{color:C.dim,fontSize:10}}>{min}</span>
+        <span style={{color:C.dim,fontSize:10}}>{max}</span>
+      </div>
+    </div>
+  );
+};
+
+const Sel=({label,value,onChange,options})=>(
+  <div style={{marginBottom:14}}>
+    {label&&<div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:'.07em',marginBottom:6}}>{label}</div>}
+    <select value={value} onChange={e=>onChange(e.target.value)}
+      style={{width:'100%',background:C.surf,color:C.white,border:`1px solid ${C.borderB}`,
+        borderRadius:9,padding:'11px 14px',fontSize:13,cursor:'pointer',fontFamily:"'Barlow',sans-serif",
+        minHeight:44}}>
+      {options.map(o=><option key={o.v} value={o.v} style={{background:C.card}}>{o.l}</option>)}
+    </select>
+  </div>
+);
+
+const BackBtn=({onBack})=>(
+  <button onClick={onBack} style={{display:'flex',alignItems:'center',gap:8,color:C.muted,
+    background:'transparent',border:`1px solid ${C.border}`,borderRadius:8,padding:'10px 18px',
+    cursor:'pointer',fontSize:13,fontFamily:"'Barlow',sans-serif",transition:'all .2s',
+    minHeight:44,flexShrink:0,whiteSpace:'nowrap'}}
+    onMouseEnter={e=>{e.currentTarget.style.color=C.blue;e.currentTarget.style.borderColor=C.blue;}}
+    onMouseLeave={e=>{e.currentTarget.style.color=C.muted;e.currentTarget.style.borderColor=C.border;}}>
+    ← חזרה
+  </button>
+);
+
+const SectionLabel=({children})=>(
+  <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:'.15em',
+    textTransform:'uppercase',marginBottom:14,display:'flex',alignItems:'center',gap:8}}>
+    <div style={{flex:1,height:1,background:C.border}}/>
+    <span style={{whiteSpace:'nowrap'}}>{children}</span>
+    <div style={{flex:1,height:1,background:C.border}}/>
+  </div>
+);
+
+const ToolLayout=({title,subtitle,onBack,children,accent=C.blue})=>(
+  <div style={{minHeight:'100vh',background:C.bg,color:C.white,direction:'rtl',
+    fontFamily:"'Barlow',sans-serif",animation:'fadeIn .3s ease'}}>
+    <div className="r-head" style={{borderBottom:`1px solid ${C.border}`,background:C.surf,
+      padding:'0 36px',display:'flex',alignItems:'stretch',minHeight:64}}>
+      <div style={{width:3,background:`linear-gradient(180deg,${accent},${accent}00)`,marginLeft:20,flexShrink:0}}/>
+      <div style={{flex:1,display:'flex',alignItems:'center',gap:12,paddingRight:4,minWidth:0}}>
+        <div style={{minWidth:0}}>
+          <div className="r-head-title" style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:20,
+            fontWeight:700,color:C.white,letterSpacing:'.02em',overflow:'hidden',
+            textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{title}</div>
+          {subtitle&&<div style={{color:C.muted,fontSize:11,marginTop:1,overflow:'hidden',
+            textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{subtitle}</div>}
+        </div>
+      </div>
+      <div style={{display:'flex',alignItems:'center',paddingRight:0}}>
+        <BackBtn onBack={onBack}/>
+      </div>
+    </div>
+    <div className="r-body" style={{padding:'24px 32px',maxWidth:1120,margin:'0 auto'}}>{children}</div>
+  </div>
+);
+
+const TwoCol=({left,right,flip})=>(
+  <div className="r-two-col"
+    style={{display:'grid',gridTemplateColumns:flip?'340px 1fr':'1fr 340px',gap:20,alignItems:'start'}}>
+    {flip?<>{right}{left}</>:<>{left}{right}</>}
+  </div>
+);
+
+// ── T1: BEARING TOLERANCES ────────────────────────────────────
+const BearingCases=[
+  {id:1,title:'מקרה 1',sub:'גל מסתובב / בית נייח',pointLoad:'OUTER RING',rotLoad:'INNER RING',
+   shaft:{fits:'k6, m6',type:'INTERFERENCE FIT',color:C.red},
+   housing:{fits:'H6, J6',type:'CLEARANCE FIT',color:C.green},
+   desc:'הטבעת הפנימית מסתובבת עם הגל — חייבת התאמה מהודקת (Tight Fit) על הגל כדי למנוע החלקה.'},
+  {id:2,title:'מקרה 2',sub:'גל נייח / בית מסתובב',pointLoad:'INNER RING',rotLoad:'OUTER RING',
+   shaft:{fits:'h6, g6',type:'CLEARANCE FIT',color:C.green},
+   housing:{fits:'M6, K6',type:'INTERFERENCE FIT',color:C.red},
+   desc:'הטבעת החיצונית מסתובבת עם הבית (גלגלת/גלף) — חייבת התאמה מהודקת בתוך הבית.'},
+];
+
+const BearingSVG=({caseId,size=150,animated})=>(
+  <svg viewBox="0 0 160 160" width={size} height={size}>
+    <circle cx="80" cy="80" r="72" fill={C.card} stroke={caseId===2?C.orange:C.borderB} strokeWidth="1.5"
+      style={animated&&caseId===2?{transformOrigin:'80px 80px',animation:'rotateRing 8s linear infinite'}:undefined}/>
+    <circle cx="80" cy="80" r="58" fill="none" stroke={C.borderB} strokeWidth=".5" strokeDasharray="3 2"/>
+    {[0,45,90,135,180,225,270,315].map((a,i)=>{
+      const x=80+64*Math.cos(a*Math.PI/180),y=80+64*Math.sin(a*Math.PI/180);
+      return <circle key={i} cx={x} cy={y} r="7" fill={C.cardH} stroke={C.borderBright} strokeWidth="1.2"/>;
+    })}
+    <circle cx="80" cy="80" r="44" fill={C.surf} stroke={caseId===1?C.orange:C.borderB} strokeWidth="1.5"
+      style={animated&&caseId===1?{transformOrigin:'80px 80px',animation:'rotateRev 5s linear infinite'}:undefined}/>
+    <circle cx="80" cy="80" r="28" fill={C.card} stroke={C.borderB} strokeWidth="1"/>
+    <circle cx="80" cy="80" r="16" fill={C.surf} stroke={C.borderB} strokeWidth="1"/>
+    <line x1="80" y1="64" x2="80" y2="96" stroke={C.borderB} strokeWidth=".5"/>
+    <line x1="64" y1="80" x2="96" y2="80" stroke={C.borderB} strokeWidth=".5"/>
+  </svg>
+);
+
+const Notes=[
+  {n:1,t:'עומסי הלם/רטט',b:'עבור עומסים כבדים יש להעלות דרגת ההתערבות בצעד אחד (n6 במקום m6).'},
+  {n:2,t:'חומר הבית (Thermal)',b:'בית אלומיניום — השתמש בK6/K7 בגלל התפשטות תרמית גבוהה.'},
+  {n:3,t:'טמפרטורה גבוהה',b:'מעל 80°C — השתמש במיסב עם מרווח פנימי מוגדל (C3) למניעת תפיסה.'},
+];
+
+const BearingTolerances=({onBack})=>{
+  const [sel,setSel]=useState(null);
+
+  if(!sel) return(
+    <ToolLayout title="טולרנסים למיסבים" subtitle="ISO 286 — בחירת התאמות לפי סוג עומס" onBack={onBack} accent={C.blue}>
+      <SectionLabel>בחר את המקרה המתאים ליישום שלך</SectionLabel>
+      <div className="r-bear" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18,marginBottom:24}}>
+        {BearingCases.map(c=>(
+          <div key={c.id} onClick={()=>setSel(c.id)}
+            style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:24,
+              cursor:'pointer',transition:'all .25s',position:'relative',overflow:'hidden',minHeight:44}}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor=`${C.blue}88`;e.currentTarget.style.transform='translateY(-3px)';e.currentTarget.style.boxShadow=`0 8px 24px ${C.blue}22`;}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.transform='';e.currentTarget.style.boxShadow='';}}>
+            <div style={{position:'absolute',top:0,left:0,right:0,height:2,
+              background:`linear-gradient(90deg,${C.orange},${C.blue})`}}/>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16,flexWrap:'wrap',gap:8}}>
+              <div>
+                <div style={{fontFamily:"'Rajdhani',sans-serif",fontSize:28,fontWeight:700,color:C.orange}}>{c.title}</div>
+                <div style={{color:C.muted,fontSize:12}}>{c.sub}</div>
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:5}}>
+                <Badge color={C.muted} size={9}>POINT: {c.pointLoad}</Badge>
+                <Badge color={C.blue} size={9}>ROTATING: {c.rotLoad}</Badge>
+              </div>
+            </div>
+            <div style={{display:'flex',justifyContent:'center',margin:'12px 0'}}>
+              <BearingSVG caseId={c.id} size={130}/>
+            </div>
+            <div style={{color:`${C.white}88`,fontSize:12,lineHeight:1.7,marginBottom:16,
+              borderTop:`1px solid ${C.border}`,paddingTop:14}}>{c.desc}</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              {[{l:'גל (SHAFT)',d:c.shaft},{l:'בית (HOUSING)',d:c.housing}].map(item=>(
+                <div key={item.l} style={{background:C.bg,border:`1px solid ${item.d.color}33`,borderRadius:10,
+                  padding:12,textAlign:'center'}}>
+                  <div style={{color:C.muted,fontSize:10,marginBottom:6}}>{item.l}</div>
+                  <div style={{fontFamily:"'JetBrains Mono'",color:item.d.color,fontSize:20,fontWeight:700,marginBottom:5}}>{item.d.fits}</div>
+                  <Badge color={item.d.color} size={9}>{item.d.type}</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <Card style={{padding:20}}>
+        <SectionLabel>ENGINEERING NOTES</SectionLabel>
+        <div className="r-notes" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+          {Notes.map(n=>(
+            <div key={n.n} style={{background:C.surf,borderRadius:10,padding:14}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                <span style={{background:C.blue,color:C.bg,borderRadius:'50%',width:22,height:22,
+                  display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,flexShrink:0}}>{n.n}</span>
+                <span style={{color:C.white,fontWeight:600,fontSize:13}}>{n.t}</span>
+              </div>
+              <div style={{color:C.muted,fontSize:12,lineHeight:1.65}}>{n.b}</div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </ToolLayout>
+  );
+
+  const c=BearingCases[sel-1];
+  return(
+    <ToolLayout title={`טולרנסים — ${c.title}`} subtitle={c.sub} onBack={onBack} accent={C.orange}>
+      <div style={{display:'flex',gap:8,marginBottom:18,flexWrap:'wrap'}}>
+        {BearingCases.map(cc=>(
+          <button key={cc.id} onClick={()=>setSel(cc.id)} style={{
+            background:cc.id===sel?`${C.blue}22`:C.surf,border:`1px solid ${cc.id===sel?C.blue:C.border}`,
+            color:cc.id===sel?C.blue:C.muted,borderRadius:8,padding:'10px 18px',cursor:'pointer',
+            fontSize:13,minHeight:44,transition:'all .2s'}}>
+            {cc.title}
+          </button>
+        ))}
+      </div>
+      <TwoCol
+        left={<div>
+          <Card style={{padding:24,marginBottom:16,position:'relative',overflow:'hidden'}}>
+            <div style={{position:'absolute',inset:0,background:`radial-gradient(ellipse at 50% 100%,${C.blue}08 0%,transparent 70%)`}}/>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16,flexWrap:'wrap',gap:10,position:'relative'}}>
+              <div style={{color:C.muted,fontSize:13,maxWidth:340,lineHeight:1.7}}>{c.desc}</div>
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                <Badge>POINT: {c.pointLoad}</Badge>
+                <Badge color={C.orange}>ROTATING: {c.rotLoad}</Badge>
+              </div>
+            </div>
+            <div style={{display:'flex',justifyContent:'center',padding:'16px 0',position:'relative'}}>
+              <BearingSVG caseId={sel} size={170} animated={true}/>
+            </div>
+          </Card>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+            {[{l:'גל (SHAFT)',d:c.shaft},{l:'בית (HOUSING)',d:c.housing}].map(item=>(
+              <Card key={item.l} style={{padding:22,textAlign:'center',position:'relative',overflow:'hidden'}}
+                glow={`${item.d.color}44`} accent={item.d.color}>
+                <div style={{position:'absolute',inset:0,background:`radial-gradient(ellipse at 50% 0%,${item.d.color}18 0%,transparent 60%)`}}/>
+                <div style={{color:C.muted,fontSize:11,marginBottom:10,position:'relative'}}>{item.l}</div>
+                <div style={{fontFamily:"'Rajdhani',sans-serif",color:item.d.color,fontSize:44,fontWeight:700,lineHeight:1,marginBottom:10,position:'relative'}}>{item.d.fits}</div>
+                <Badge color={item.d.color}>{item.d.type}</Badge>
+              </Card>
+            ))}
+          </div>
+        </div>}
+        right={<Card style={{padding:20}}>
+          <SectionLabel>ENGINEERING NOTES</SectionLabel>
+          {Notes.map(n=>(
+            <div key={n.n} style={{background:C.surf,borderRadius:10,padding:14,marginBottom:10}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                <span style={{background:C.blue,color:C.bg,borderRadius:'50%',width:20,height:20,
+                  display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:700,flexShrink:0}}>{n.n}</span>
+                <span style={{color:C.white,fontWeight:600,fontSize:12}}>{n.t}</span>
+              </div>
+              <div style={{color:C.muted,fontSize:11,lineHeight:1.65}}>{n.b}</div>
+            </div>
+          ))}
+        </Card>}
+      />
+    </ToolLayout>
+  );
+};
+
+// ── T2: MOTOR POWER ───────────────────────────────────────────
+const IEC_MOTORS=[
+  {kw:.09,fr:56},{kw:.12,fr:56},{kw:.18,fr:63},{kw:.25,fr:63},{kw:.37,fr:71},
+  {kw:.55,fr:71},{kw:.75,fr:80},{kw:1.1,fr:80},{kw:1.5,fr:90},{kw:2.2,fr:90},
+  {kw:3.0,fr:100},{kw:4.0,fr:112},{kw:5.5,fr:132},{kw:7.5,fr:132},{kw:11,fr:160},{kw:15,fr:160},
+];
+
+const MotorPower=({onBack})=>{
+  const [mass,setMass]=useState(50);const [rad,setRad]=useState(30);
+  const [vel,setVel]=useState(0.4);const [sf,setSf]=useState(1.2);
+  const calc=useMemo(()=>{
+    const F=parseFloat(mass)*9.81,r=parseFloat(rad)/1000,v=parseFloat(vel),s=parseFloat(sf);
+    const P_th=F*v/1000,P_req=P_th*s,omega=v/r,rpm=omega*60/(2*Math.PI),torque=F*r;
+    const motor=IEC_MOTORS.find(m=>m.kw>=P_req)||IEC_MOTORS[IEC_MOTORS.length-1];
+    return{F:F.toFixed(1),P_th:P_th.toFixed(4),P_req:P_req.toFixed(4),omega:omega.toFixed(1),rpm:rpm.toFixed(1),torque:torque.toFixed(1),motor};
+  },[mass,rad,vel,sf]);
+
+  return(
+    <ToolLayout title="הספק ובחירת מנוע" subtitle="חישוב הספק ומומנט לפי IEC" onBack={onBack} accent={C.orange}>
+      <TwoCol
+        left={<div>
+          <div className="r-k4" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:16}}>
+            {[{l:'כוח',v:calc.F,u:'N',c:C.white},{l:'מ. זוויתית',v:calc.omega,u:'rad/s',c:C.blue},
+              {l:'מומנט',v:calc.torque,u:'Nm',c:C.orange},{l:'סל"ד',v:calc.rpm,u:'RPM',c:C.green}].map(r=>(
+              <div key={r.l} style={{background:C.card,border:`1px solid ${r.c}22`,borderRadius:12,padding:12,textAlign:'center'}}>
+                <div style={{color:C.muted,fontSize:10,letterSpacing:'.08em',marginBottom:5}}>{r.l}</div>
+                <div style={{fontFamily:"'JetBrains Mono'",color:r.c,fontSize:18,fontWeight:600}}>{r.v}</div>
+                <div style={{color:C.muted,fontSize:10,marginTop:2}}>{r.u}</div>
+              </div>
+            ))}
+          </div>
+          <Card style={{padding:20,marginBottom:16}}>
+            <SectionLabel>חישוב הספק</SectionLabel>
+            <div style={{display:'flex',alignItems:'center',gap:0,background:C.bg,borderRadius:10,
+              overflow:'hidden',border:`1px solid ${C.border}`,flexWrap:'wrap'}}>
+              <div style={{flex:1,padding:'14px 18px',textAlign:'center',minWidth:80}}>
+                <div style={{color:C.muted,fontSize:10,marginBottom:4}}>הספק תיאורטי</div>
+                <Mono c={C.muted} s={18}>{calc.P_th}</Mono>
+                <span style={{color:C.muted,fontSize:11}}> kW</span>
+              </div>
+              <div style={{padding:'0 10px',color:C.dim,fontSize:22}}>×</div>
+              <div style={{padding:'8px 14px',background:`${C.orange}22`,border:`1px solid ${C.orange}33`,borderRadius:8}}>
+                <div style={{color:C.muted,fontSize:10,marginBottom:2}}>SF</div>
+                <Mono c={C.orange} s={16}>{sf}</Mono>
+              </div>
+              <div style={{padding:'0 10px',color:C.dim,fontSize:22}}>=</div>
+              <div style={{flex:1,padding:'14px 18px',textAlign:'center',background:`${C.blue}0a`,minWidth:80}}>
+                <div style={{color:C.muted,fontSize:10,marginBottom:4}}>הספק דרוש</div>
+                <Mono c={C.blue} s={18}>{calc.P_req}</Mono>
+                <span style={{color:C.blue,fontSize:11}}> kW</span>
+              </div>
+            </div>
+          </Card>
+          <Card glow={`${C.green}44`} accent={C.green} style={{padding:22}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16,flexWrap:'wrap',gap:10}}>
+              <div>
+                <div style={{color:C.muted,fontSize:11,marginBottom:4}}>מנוע מומלץ (IEC)</div>
+                <div style={{fontFamily:"'Rajdhani',sans-serif",color:C.green,fontSize:48,fontWeight:700,lineHeight:1}}>{calc.motor.kw}</div>
+                <div style={{color:C.green,fontSize:18}}>kW — Frame {calc.motor.fr}</div>
+              </div>
+              <div style={{background:`${C.green}22`,border:`1px solid ${C.green}44`,borderRadius:'50%',
+                width:48,height:48,display:'flex',alignItems:'center',justifyContent:'center',
+                color:C.green,fontSize:22}}>✓</div>
+            </div>
+            <svg viewBox="0 0 340 90" width="100%" style={{display:'block',background:C.bg,borderRadius:8,padding:'0 8px'}}>
+              <text x="65" y="12" textAnchor="middle" fill={C.muted} fontSize="8" fontFamily="Barlow">FRONT VIEW</text>
+              <rect x="15" y="18" width="100" height="65" rx="5" fill={C.card} stroke={C.borderBright} strokeWidth="1.5"/>
+              <circle cx="65" cy="50" r="22" fill={C.surf} stroke={C.green} strokeWidth="1.5"/>
+              <circle cx="65" cy="50" r="7" fill={C.card} stroke={C.green} strokeWidth="1"/>
+              <line x1="10" y1="50" x2="15" y2="50" stroke={C.muted} strokeWidth="2"/>
+              <text x="65" y="85" textAnchor="middle" fill={C.muted} fontSize="7" fontFamily="JetBrains Mono">H={calc.motor.fr}</text>
+              <text x="225" y="12" textAnchor="middle" fill={C.muted} fontSize="8" fontFamily="Barlow">SIDE VIEW</text>
+              <rect x="155" y="22" width="140" height="58" rx="5" fill={C.card} stroke={C.borderBright} strokeWidth="1.5"/>
+              <rect x="295" y="38" width="28" height="26" rx="2" fill={C.surf} stroke={C.borderBright} strokeWidth="1.2"/>
+              <text x="225" y="85" textAnchor="middle" fill={C.muted} fontSize="7" fontFamily="JetBrains Mono">B≈{Math.round(calc.motor.fr*.95)}</text>
+            </svg>
+          </Card>
+        </div>}
+        right={<Card style={{padding:20}}>
+          <SectionLabel>פרמטרים</SectionLabel>
+          <Inp label="משקל להנעה (M)" value={mass} onChange={setMass} unit="kg" min="0.1"/>
+          <Inp label="רדיוס סיבוב (R)" value={rad} onChange={setRad} unit="mm" min="1"/>
+          <Inp label="מהירות קווית (V)" value={vel} onChange={setVel} unit="m/s" min="0.01" step="0.01"/>
+          <Inp label="מקדם בטיחון (SF)" value={sf} onChange={setSf} unit="" min="1.0" max="2.5" step="0.1"/>
+          <div style={{background:C.surf,borderRadius:10,padding:14,marginTop:6}}>
+            <div style={{color:C.muted,fontSize:10,letterSpacing:'.1em',marginBottom:8}}>נוסחאות</div>
+            {[['F','M × g'],['τ','F × R'],['P','F × V / 1000'],['P_req','P × SF']].map(([k,v])=>(
+              <div key={k} style={{display:'flex',gap:8,marginBottom:4,alignItems:'baseline'}}>
+                <Mono c={C.orange} s={12}>{k}</Mono><span style={{color:C.dim,fontSize:11}}>=</span>
+                <span style={{color:C.muted,fontSize:11,fontFamily:'monospace'}}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </Card>}
+      />
+    </ToolLayout>
+  );
+};
+
+// ── T3: NMRV CONFIGURATOR ─────────────────────────────────────
+const NMRV_TABLE=[
+  {iec:'IEC 56',kw:'0.09–0.12',nmrv:'NMRV 030',maxI:'i≤100',pam:'B14/B5'},
+  {iec:'IEC 63',kw:'0.18–0.25',nmrv:'NMRV 030/040',maxI:'i≤100(030) / i≤40(040)',pam:'B14/B5'},
+  {iec:'IEC 71',kw:'0.37–0.55',nmrv:'NMRV 040/050',maxI:'i≤50(050) / i≤30(040)',pam:'B14/B5'},
+  {iec:'IEC 80',kw:'0.75–1.1',nmrv:'NMRV 050/063',maxI:'i≤50(063) / i≤30(050)',pam:'B14/B5'},
+  {iec:'IEC 90',kw:'1.5–2.2',nmrv:'NMRV 063/075',maxI:'i≤50(075) / i≤30(063)',pam:'B14/B5'},
+  {iec:'IEC 100/112',kw:'3.0–4.0',nmrv:'NMRV 075/090',maxI:'i≤50(090) / i≤30(075)',pam:'B14/B5'},
+  {iec:'IEC 132',kw:'5.5–7.5',nmrv:'NMRV 090/110',maxI:'i≤30(110) / i≤15(090)',pam:'B5'},
+  {iec:'IEC 160',kw:'11.0–15.0',nmrv:'NMRV 130/150',maxI:'i≤50(150) / i≤30(130)',pam:'B5'},
+];
+
+const NMRVConfigurator=({onBack})=>{
+  const [q,setQ]=useState('');
+  const rows=NMRV_TABLE.filter(r=>!q||[r.iec,r.kw,r.nmrv].some(s=>s.toLowerCase().includes(q.toLowerCase())));
+  return(
+    <ToolLayout title="NMRV Configurator" subtitle="Motovario — התאמת מנועי IEC לגירים חלזוניים" onBack={onBack} accent={C.green}>
+      <div style={{display:'flex',gap:10,marginBottom:18}}>
+        <div style={{flex:1,display:'flex',alignItems:'center',gap:10,background:C.card,
+          border:`1px solid ${C.borderB}`,borderRadius:10,padding:'0 14px',minHeight:44}}>
+          <span style={{color:C.muted,fontSize:16}}>⌕</span>
+          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="חיפוש — IEC 90, 1.5, 063..."
+            style={{flex:1,background:'transparent',border:'none',color:C.white,padding:'10px 0',
+              fontSize:14,fontFamily:"'Barlow'"}}/>
+          {q&&<button onClick={()=>setQ('')} style={{color:C.muted,background:'none',border:'none',
+            cursor:'pointer',fontSize:16,padding:'0 4px',minHeight:44}}>✕</button>}
+        </div>
+      </div>
+      <Card style={{overflow:'hidden',marginBottom:16}}>
+        <div className="tbl-wrap">
+          <table style={{width:'100%',borderCollapse:'collapse',minWidth:600}}>
+            <thead>
+              <tr style={{background:C.surf}}>
+                {['גודל מנוע (IEC)','הספק (kW)','גיר תואם (NMRV)','מגבלת יחס (i)','מבנה (PAM)'].map(h=>(
+                  <th key={h} style={{padding:'12px 16px',color:C.muted,fontSize:10,fontWeight:700,
+                    letterSpacing:'.1em',textAlign:'right',borderBottom:`1px solid ${C.border}`,whiteSpace:'nowrap'}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r,i)=>(
+                <tr key={i} style={{borderBottom:`1px solid ${C.border}`,transition:'background .15s'}}
+                  onMouseEnter={e=>e.currentTarget.style.background=C.cardH}
+                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  <td style={{padding:'13px 16px',whiteSpace:'nowrap'}}><Badge color={C.blue}>{r.iec}</Badge></td>
+                  <td style={{padding:'13px 16px',whiteSpace:'nowrap'}}><Mono s={13}>kW {r.kw}</Mono></td>
+                  <td style={{padding:'13px 16px',fontWeight:700,color:C.white,whiteSpace:'nowrap'}}>{r.nmrv}</td>
+                  <td style={{padding:'13px 16px',color:C.orange,fontSize:12}}>{r.maxI}</td>
+                  <td style={{padding:'13px 16px',whiteSpace:'nowrap'}}><Badge color={C.muted}>{r.pam}</Badge></td>
+                </tr>
+              ))}
+              {!rows.length&&<tr><td colSpan={5} style={{padding:24,textAlign:'center',color:C.muted}}>אין תוצאות</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+      <div className="r-notes" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+        {[{t:'למה יש הגבלת יחס (i)?',b:'ביחסים גבוהים הנצילות יורדת דרמטית. NMRV קטן לא יכול לפזר את החום שנוצר.'},
+          {t:'מקדם שירות (f.s)',b:'מכונות קלות: 1.0 | 8-16 שעות: 1.25 | עם זעזועים: 1.5 | עומס כבד: 2.0'},
+          {t:'פלנג׳ B5 לעומת B14',b:'B5 — פלנג׳ גדול 4-8 בורגים. B14 — מרכזי קטן. לגירים ≥090 רק B5.'}
+        ].map((n,i)=>(
+          <Card key={i} style={{padding:16}}>
+            <div style={{color:C.white,fontWeight:600,fontSize:13,marginBottom:8}}>{n.t}</div>
+            <div style={{color:C.muted,fontSize:12,lineHeight:1.65}}>{n.b}</div>
+          </Card>
+        ))}
+      </div>
+    </ToolLayout>
+  );
+};
+
+// ── T4: WORM GEAR DESIGN ──────────────────────────────────────
+const NMRV_EFF={30:75,40:78,50:80,63:82,75:83,90:84,110:85,130:86,150:87};
+const NMRV_SHAFT={30:11,40:14,50:18,63:25,75:28,90:35,110:42,130:50,150:60};
+const MOTOR_SPEEDS=[{v:'2800',l:'2 קטבים (~2800 סל"ד)'},{v:'1400',l:'4 קטבים (~1400 סל"ד)'},{v:'950',l:'6 קטבים (~950 סל"ד)'},{v:'700',l:'8 קטבים (~700 סל"ד)'}];
+const NMRV_SIZES=['030','040','050','063','075','090','110','130','150'].map(v=>({v,l:`NMRV ${v}`}));
+const RATIOS=['5','7.5','10','15','20','25','30','40','50','60','80','100'].map(v=>({v,l:`1 : ${v}`}));
+const MOTOR_KWS=['0.09','0.12','0.18','0.25','0.37','0.55','0.75','1.1','1.5','2.2','3.0','4.0','5.5','7.5','11','15'].map(v=>({v,l:`${v} kW`}));
+
+const WormGearDesign=({onBack})=>{
+  const [kw,setKw]=useState('0.75');const [spd,setSpd]=useState('1400');
+  const [sz,setSz]=useState('063');const [ratio,setRatio]=useState('20');
+  const calc=useMemo(()=>{
+    const eff=(NMRV_EFF[parseInt(sz)]||82)/100,i=parseFloat(ratio),n=parseFloat(spd),P=parseFloat(kw);
+    return{eff:(eff*100).toFixed(0),n_out:(n/i).toFixed(1),torque:(P*eff*i*9550/n).toFixed(1),shaft:NMRV_SHAFT[parseInt(sz)]||25};
+  },[kw,spd,sz,ratio]);
+  return(
+    <ToolLayout title="מחשבון מומנט הנדסי" subtitle="תכנון ובחירת גיר חלזוני NMRV" onBack={onBack} accent={C.blue}>
+      <TwoCol
+        left={<div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:16}}>
+            <ResultBig label="מומנט יציאה מחושב" value={calc.torque} unit="Nm" color={C.orange}
+              sub={`${ratio}:1 × NMRV ${sz} × ${kw}kW`}/>
+            <div>
+              <ResultBig label="מהירות יציאה" value={calc.n_out} unit="RPM" color={C.blue}/>
+              <ResultSm label="נצילות (EFFICIENCY)" value={`${calc.eff}%`} color={C.green}/>
+            </div>
+          </div>
+          <Card style={{padding:22}}>
+            <SectionLabel>דיאגרמת מערכת</SectionLabel>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-around',padding:'12px 0',flexWrap:'wrap',gap:12}}>
+              <div style={{textAlign:'center'}}>
+                <svg viewBox="0 0 80 80" width="72" height="72">
+                  <rect x="5" y="10" width="65" height="60" rx="6" fill={`${C.blue}22`} stroke={C.blue} strokeWidth="1.5"/>
+                  <circle cx="37" cy="40" r="18" fill={C.surf} stroke={C.blue} strokeWidth="1.5"/>
+                  <circle cx="37" cy="40" r="6" fill={`${C.blue}44`} stroke={C.blue} strokeWidth="1"/>
+                  <rect x="70" y="32" width="10" height="16" rx="2" fill={`${C.blue}44`} stroke={C.blue} strokeWidth="1"/>
+                </svg>
+                <div style={{color:C.blue,fontSize:11,fontWeight:600}}>{kw} kW</div>
+                <div style={{color:C.muted,fontSize:10}}>{spd} RPM</div>
+              </div>
+              <div style={{color:C.dim,fontSize:22}}>→</div>
+              <div style={{textAlign:'center'}}>
+                <svg viewBox="0 0 80 80" width="72" height="72">
+                  <rect x="5" y="5" width="70" height="70" rx="8" fill={C.surf} stroke={C.borderBright} strokeWidth="1.5"/>
+                  <circle cx="40" cy="40" r="20" fill={C.card} stroke={C.borderBright} strokeWidth="1.5"/>
+                  <circle cx="40" cy="40" r="7" fill={C.surf} stroke={C.muted} strokeWidth="1"/>
+                  <rect x="36" y="62" width="8" height="16" rx="3" fill={C.orange}/>
+                </svg>
+                <div style={{color:C.white,fontSize:11,fontWeight:600}}>NMRV {sz}</div>
+                <div style={{color:C.green,fontSize:10}}>{calc.eff}% eff.</div>
+              </div>
+              <div style={{color:C.dim,fontSize:22}}>→</div>
+              <div style={{background:`${C.orange}11`,border:`1px solid ${C.orange}33`,borderRadius:12,padding:'14px 18px',textAlign:'center'}}>
+                <div style={{color:C.muted,fontSize:10,marginBottom:4}}>יציאה</div>
+                <div style={{fontFamily:"'Rajdhani'",color:C.orange,fontSize:30,fontWeight:700}}>{calc.torque}</div>
+                <div style={{color:C.orange,fontSize:13}}>Nm | {calc.n_out} RPM</div>
+              </div>
+            </div>
+          </Card>
+          <div style={{background:`${C.yellow}11`,border:`1px solid ${C.yellow}22`,borderRadius:10,padding:14,marginTop:14,borderRight:`3px solid ${C.yellow}`}}>
+            <div style={{color:C.yellow,fontSize:12,fontWeight:600,marginBottom:4}}>⚠ הערת תכנון</div>
+            <div style={{color:C.muted,fontSize:12,lineHeight:1.7}}>זהו המומנט התיאורטי. יש לוודא מול קטלוג היצרן שגיר NMRV {sz} עומד ב-{calc.torque} Nm בהתחשב במקדם שירות.</div>
+          </div>
+        </div>}
+        right={<Card style={{padding:20}}>
+          <SectionLabel>פרמטרים</SectionLabel>
+          <Sel label="הספק מנוע (kW)" value={kw} onChange={setKw} options={MOTOR_KWS}/>
+          <Sel label='מהירות מנוע (סל"ד)' value={spd} onChange={setSpd} options={MOTOR_SPEEDS}/>
+          <Sel label="גודל גיר (NMRV)" value={sz} onChange={setSz} options={NMRV_SIZES}/>
+          <Sel label="יחס הפתחה (i)" value={ratio} onChange={setRatio} options={RATIOS}/>
+          <div style={{background:C.bg,borderRadius:10,padding:14,marginTop:6}}>
+            <div style={{color:C.muted,fontSize:10,letterSpacing:'.1em',marginBottom:8}}>נוסחה</div>
+            <div style={{color:C.muted,fontSize:12,fontFamily:'monospace',lineHeight:1.9}}>T = P × η × i × 9550 / n</div>
+          </div>
+        </Card>}
+      />
+    </ToolLayout>
+  );
+};
+
+// ── T5: PULLEY RATIOS ─────────────────────────────────────────
+const STD_T=[16,18,19,20,22,24,25,28,30,32,36,38,40,42,45,48,50,55,56,60,63,70,71,75,80,85,90,95,100,112,118,125,132,140,150,160,180,200,224,250,280,315,355,400];
+const PulleyRatios=({onBack})=>{
+  const [motorRpm,setMotorRpm]=useState(1400);const [targetRpm,setTargetRpm]=useState(400);const [driverD,setDriverD]=useState(100);
+  const calc=useMemo(()=>{
+    const idealR=parseFloat(motorRpm)/parseFloat(targetRpm),drivenD=parseFloat(driverD)*idealR;
+    const combos=[];
+    for(let d1 of STD_T){for(let d2 of STD_T){const r=d2/d1,dev=(r-idealR)/idealR*100;if(Math.abs(dev)<2){combos.push({d1,d2,ratio:r.toFixed(3),dev:dev.toFixed(2),rpm:(parseFloat(motorRpm)*d1/d2).toFixed(0)});if(combos.length>=7)break;}}if(combos.length>=7)break;}
+    return{idealR:idealR.toFixed(3),drivenD:drivenD.toFixed(0),combos};
+  },[motorRpm,targetRpm,driverD]);
+  const sc=Math.min(46,parseFloat(driverD)/4),dsc=Math.min(46,parseFloat(calc.drivenD)/4);
+  return(
+    <ToolLayout title="מחשבון יחסי פולי" subtitle="חישוב יחסי העברה ושילובי גלגלי שיניים תקניים" onBack={onBack} accent={C.yellow}>
+      <TwoCol
+        left={<div>
+          <Card style={{padding:20,marginBottom:16}}>
+            <div className="r-k3" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:16}}>
+              <ResultSm label="יחס פולי אידיאלי" value={calc.idealR} color={C.yellow}/>
+              <ResultSm label='סל"ד כניסה' value={motorRpm} unit="RPM" color={C.blue}/>
+              <ResultSm label='סל"ד יציאה' value={targetRpm} unit="RPM" color={C.orange}/>
+            </div>
+            <div style={{background:C.bg,borderRadius:10,padding:'16px 12px'}}>
+              <div style={{color:C.muted,fontSize:10,letterSpacing:'.1em',marginBottom:10}}>LIVE ENGINEERING VIEW</div>
+              <svg viewBox="0 0 380 110" width="100%" style={{display:'block',overflow:'visible'}}>
+                <circle cx="70" cy="55" r={sc} fill={`${C.blue}22`} stroke={C.blue} strokeWidth="2"/>
+                <circle cx="70" cy="55" r={sc*.35} fill={C.card} stroke={C.blue} strokeWidth="1"/>
+                {[0,60,120].map(a=><line key={a} x1={70+sc*.35*Math.cos(a*Math.PI/180)} y1={55+sc*.35*Math.sin(a*Math.PI/180)} x2={70+sc*.85*Math.cos(a*Math.PI/180)} y2={55+sc*.85*Math.sin(a*Math.PI/180)} stroke={C.blue} strokeWidth="1.5"/>)}
+                <text x="70" y="52" textAnchor="middle" fill={C.blue} fontSize="9" fontFamily="JetBrains Mono">Ø{driverD}</text>
+                <text x="70" y="63" textAnchor="middle" fill={C.blue} fontSize="8" fontFamily="JetBrains Mono">{motorRpm}rpm</text>
+                <line x1={70+sc} y1={55-sc*.25} x2={290-dsc} y2={55-dsc*.25} stroke={C.borderBright} strokeWidth="2"/>
+                <line x1={70+sc} y1={55+sc*.25} x2={290-dsc} y2={55+dsc*.25} stroke={C.borderBright} strokeWidth="2"/>
+                <circle cx="290" cy="55" r={dsc} fill={`${C.orange}22`} stroke={C.orange} strokeWidth="2"/>
+                <circle cx="290" cy="55" r={dsc*.35} fill={C.card} stroke={C.orange} strokeWidth="1"/>
+                {[0,60,120].map(a=><line key={a} x1={290+dsc*.35*Math.cos(a*Math.PI/180)} y1={55+dsc*.35*Math.sin(a*Math.PI/180)} x2={290+dsc*.85*Math.cos(a*Math.PI/180)} y2={55+dsc*.85*Math.sin(a*Math.PI/180)} stroke={C.orange} strokeWidth="1.5"/>)}
+                <text x="290" y="52" textAnchor="middle" fill={C.orange} fontSize="9" fontFamily="JetBrains Mono">Ø{calc.drivenD}</text>
+                <text x="290" y="63" textAnchor="middle" fill={C.orange} fontSize="8" fontFamily="JetBrains Mono">{targetRpm}rpm</text>
+              </svg>
+            </div>
+          </Card>
+          <Card style={{overflow:'hidden'}}>
+            <div style={{padding:'12px 16px',background:C.surf,borderBottom:`1px solid ${C.border}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span style={{color:C.white,fontSize:13,fontWeight:600}}>שילובי גלגלי שיניים</span>
+              <Badge color={C.yellow}>סטייה &lt;2%</Badge>
+            </div>
+            <div className="tbl-wrap">
+              <table style={{width:'100%',borderCollapse:'collapse',minWidth:400}}>
+                <thead><tr style={{background:C.surf}}>
+                  {['DRIVE','DRIVEN','יחס','מהירות','סטייה'].map(h=>(
+                    <th key={h} style={{padding:'9px 14px',color:C.muted,fontSize:10,fontWeight:700,letterSpacing:'.08em',textAlign:'right',borderBottom:`1px solid ${C.border}`}}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {calc.combos.map((c,i)=>(
+                    <tr key={i} style={{borderBottom:`1px solid ${C.border}`}} onMouseEnter={e=>e.currentTarget.style.background=C.cardH} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                      <td style={{padding:'9px 14px'}}><Mono s={13}>{c.d1}</Mono></td>
+                      <td style={{padding:'9px 14px'}}><Mono c={C.orange} s={13}>{c.d2}</Mono></td>
+                      <td style={{padding:'9px 14px'}}><Mono c={C.white} s={13}>{c.ratio}</Mono></td>
+                      <td style={{padding:'9px 14px'}}><Mono c={C.yellow} s={13}>{c.rpm}</Mono></td>
+                      <td style={{padding:'9px 14px'}}><span style={{color:Math.abs(parseFloat(c.dev))<0.5?C.green:C.yellow,fontSize:12}}>{c.dev}%</span></td>
+                    </tr>
+                  ))}
+                  {!calc.combos.length&&<tr><td colSpan={5} style={{padding:20,textAlign:'center',color:C.muted}}>אין שילובים — שנה פרמטרים</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>}
+        right={<Card style={{padding:20}}>
+          <SectionLabel>נתוני קלט</SectionLabel>
+          <Inp label='סל"ד מנוע' value={motorRpm} onChange={setMotorRpm} unit="RPM" min="100"/>
+          <Inp label='סל"ד יציאה מבוקש' value={targetRpm} onChange={setTargetRpm} unit="RPM" min="1"/>
+          <Inp label="קוטר גלגל מנוע (Driver)" value={driverD} onChange={setDriverD} unit="mm" min="10"/>
+          <div style={{background:`${C.yellow}11`,border:`1px solid ${C.yellow}22`,borderRadius:10,padding:14,marginTop:6}}>
+            <div style={{color:C.yellow,fontSize:11,fontWeight:600,marginBottom:4}}>קוטר גלגל יציאה (Driven)</div>
+            <div style={{fontFamily:"'Rajdhani'",color:C.yellow,fontSize:32,fontWeight:700}}>{calc.drivenD} mm</div>
+          </div>
+        </Card>}
+      />
+    </ToolLayout>
+  );
+};
+
+// ── T6: NMRV SYSTEM ───────────────────────────────────────────
+const NMRVSystem=({onBack})=>(
+  <ToolLayout title="מערכת התאמת מנוע וגיר NMRV" subtitle="Motovario — לפי יישום ואפליקציה" onBack={onBack} accent={C.green}>
+    <Card style={{overflow:'hidden',marginBottom:16}}>
+      <div className="tbl-wrap">
+        <table style={{width:'100%',borderCollapse:'collapse',minWidth:600}}>
+          <thead><tr style={{background:C.surf}}>
+            {['גודל/מבנה (IEC)','הספק (kW)','גיר תואם (NMRV)','מגבלת יחס (Max i)','מבנה (PAM)'].map(h=>(
+              <th key={h} style={{padding:'12px 16px',color:C.muted,fontSize:10,fontWeight:700,letterSpacing:'.08em',textAlign:'right',borderBottom:`1px solid ${C.border}`,whiteSpace:'nowrap'}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {NMRV_TABLE.map((r,i)=>(
+              <tr key={i} style={{borderBottom:`1px solid ${C.border}`,transition:'background .15s'}} onMouseEnter={e=>e.currentTarget.style.background=C.cardH} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                <td style={{padding:'13px 16px',whiteSpace:'nowrap'}}><Badge color={C.blue}>{r.iec}</Badge></td>
+                <td style={{padding:'13px 16px',whiteSpace:'nowrap'}}><Mono s={13}>kW {r.kw}</Mono></td>
+                <td style={{padding:'13px 16px',fontWeight:700,color:C.white,whiteSpace:'nowrap'}}>{r.nmrv}</td>
+                <td style={{padding:'13px 16px',color:C.orange,fontSize:12}}>{r.maxI}</td>
+                <td style={{padding:'13px 16px',whiteSpace:'nowrap'}}><Badge color={C.muted}>{r.pam}</Badge></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+    <div className="r-notes" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+      {[{t:'למה יש הגבלת יחס (i)?',b:'ביחסים גבוהים הנצילות יורדת דרמטית. NMRV קטן לא יכול לפזר את החום שנוצר.'},
+        {t:'מקדם שירות (f.s)',b:'מכונות קלות: 1.0 | 8-16 שעות: 1.25 | עם זעזועים: 1.5 | עומס כבד: 2.0'},
+        {t:'פלנג׳ B5 לעומת B14',b:'B5 — פלנג׳ גדול 4-8 בורגים. B14 — מרכזי קטן. לגירים ≥090 רק B5.'}
+      ].map((n,i)=><Card key={i} style={{padding:16}}><div style={{color:C.white,fontWeight:600,fontSize:13,marginBottom:8}}>{n.t}</div><div style={{color:C.muted,fontSize:12,lineHeight:1.65}}>{n.b}</div></Card>)}
+    </div>
+  </ToolLayout>
+);
+
+// ── T7: FILM ROLL WEIGHT ──────────────────────────────────────
+const FILM_MATS=[{v:'HDPE',l:'HDPE (0.95 g/cm³)',d:0.95},{v:'LDPE',l:'LDPE (0.92 g/cm³)',d:0.92},{v:'PP',l:'PP (0.91 g/cm³)',d:0.91},{v:'PVC',l:'PVC (1.38 g/cm³)',d:1.38},{v:'PET',l:'PET (1.38 g/cm³)',d:1.38}];
+const CORE_TYPES=[{v:'cardboard',l:'קרטון (0.8 g/cm³)',d:0.8,wall:6},{v:'steel',l:'פלדה (7.85 g/cm³)',d:7.85,wall:5},{v:'plastic',l:'פלסטיק (1.05 g/cm³)',d:1.05,wall:4}];
+const CORE_IDS=[{v:'76.2',l:'3" (76.2 mm)'},{v:'152.4',l:'6" (152.4 mm)'},{v:'76',l:'76 mm'},{v:'150',l:'150 mm'}];
+const FilmRollWeight=({onBack})=>{
+  const [mat,setMat]=useState('HDPE');const [core,setCore]=useState('cardboard');
+  const [cID,setCID]=useState('76.2');const [OD,setOD]=useState(400);const [W,setW]=useState(1000);const [thick,setThick]=useState(50);
+  const calc=useMemo(()=>{
+    const film=FILM_MATS.find(f=>f.v===mat),ct=CORE_TYPES.find(c=>c.v===core);
+    const ID=parseFloat(cID),od=parseFloat(OD),w=parseFloat(W),t=parseFloat(thick),ODc=ID+2*ct.wall;
+    const Vf=Math.PI/4*((od/10)**2-(ODc/10)**2)*(w/10)*0.97;
+    const Mf=Vf*film.d/1000,L=Vf/((w/10)*(t/10000))/100;
+    const Vc=Math.PI/4*((ODc/10)**2-(ID/10)**2)*(w/10),Mc=Vc*ct.d/1000;
+    return{Mt:(Mf+Mc).toFixed(2),Mf:Mf.toFixed(2),Mc:Mc.toFixed(2),L:L.toFixed(1),ODc:ODc.toFixed(1)};
+  },[mat,core,cID,OD,W,thick]);
+  return(
+    <ToolLayout title="מחשבון משקל גליל פילם" subtitle="v1.0 — RCoT Standard" onBack={onBack} accent={C.yellow}>
+      <TwoCol
+        left={<div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
+            <ResultBig label="אורך יריעה כולל" value={calc.L} unit="מטר" color={C.green}/>
+            <ResultBig label='משקל כולל להרמה' value={calc.Mt} unit='ק"ג' color={C.orange}/>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
+            <ResultSm label='משקל פילם נטו' value={`${calc.Mf} ק"ג`}/>
+            <ResultSm label='משקל ליבה' value={`${calc.Mc} ק"ג`} color={C.muted}/>
+          </div>
+          <Card style={{padding:20,marginBottom:14}}>
+            <SectionLabel>חתך גליל — סכמה הנדסית</SectionLabel>
+            <div style={{display:'flex',justifyContent:'center',background:C.bg,borderRadius:10,padding:'16px 0'}}>
+              <svg viewBox="0 0 220 220" width="200" height="200">
+                <circle cx="110" cy="110" r={Math.min(88,parseFloat(OD)/5)} fill={`${C.blue}0a`} stroke={C.blue} strokeWidth="1.5"/>
+                {[.9,.8,.7,.6].map((r,i)=><circle key={i} cx="110" cy="110" r={Math.min(88,parseFloat(OD)/5)*r} fill="none" stroke={`${C.blue}${i===0?'33':'18'}`} strokeWidth=".5"/>)}
+                <circle cx="110" cy="110" r={parseFloat(calc.ODc)/10*1.15} fill={C.card} stroke={C.orange} strokeWidth="1.5"/>
+                <circle cx="110" cy="110" r={parseFloat(cID)/10*1.15} fill={C.surf} stroke={C.muted} strokeWidth="1"/>
+                <line x1="110" y1="110" x2={110+Math.min(88,parseFloat(OD)/5)} y2="110" stroke={C.blue} strokeWidth=".8" strokeDasharray="3 2"/>
+                <text x={118+Math.min(88,parseFloat(OD)/5)/2} y="107" fill={C.blue} fontSize="8" fontFamily="JetBrains Mono">OD={OD}</text>
+                <text x="110" y="114" textAnchor="middle" fill={C.muted} fontSize="7">ID={cID}</text>
+              </svg>
+            </div>
+          </Card>
+          <Card style={{padding:16}}>
+            <SectionLabel>ENGINEERING FORMULAS</SectionLabel>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+              {[['V_film','(π/4)×(OD²-ODc²)×W×0.97'],['L_film','V/(W×t)/100'],['M_film','V×ρ/1000'],['M_total','Mf+Mc']].map(([k,v])=>(
+                <div key={k} style={{background:C.surf,borderRadius:7,padding:9}}>
+                  <Mono c={C.orange} s={11}>{k} =</Mono>
+                  <div style={{color:C.muted,fontSize:10,marginTop:2,fontFamily:'monospace'}}>{v}</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>}
+        right={<Card style={{padding:20}}>
+          <SectionLabel>נתוני יסוד</SectionLabel>
+          <Sel label="סוג חומר (Film)" value={mat} onChange={setMat} options={FILM_MATS.map(f=>({v:f.v,l:f.l}))}/>
+          <Sel label="סוג ליבה (Core)" value={core} onChange={setCore} options={CORE_TYPES.map(c=>({v:c.v,l:c.l}))}/>
+          <Sel label="קוטר ליבה פנימי ID" value={cID} onChange={setCID} options={CORE_IDS}/>
+          <Inp label='קוטר חיצוני OD (מ"מ)' value={OD} onChange={setOD} unit="mm" min="50"/>
+          <Inp label='רוחב גליל W (מ"מ)' value={W} onChange={setW} unit="mm" min="10"/>
+          <Inp label="עובי יריעה t (מיקרון)" value={thick} onChange={setThick} unit="μm" min="5" step="5"/>
+        </Card>}
+      />
+    </ToolLayout>
+  );
+};
+
+// ── T8: PISTON FORCE ──────────────────────────────────────────
+// תקן ISO 15552 (צילינדרים) + ISO 6432 (מיני) — הסטנדרט המקובל בתעשייה
+// Festo / SMC / Parker / Bosch Rexroth / Aventics
+const BORE_ROD_STD=[
+  {bore:8,   rod:4,  thread:'M4'},
+  {bore:10,  rod:4,  thread:'M4'},
+  {bore:12,  rod:4,  thread:'M5'},
+  {bore:16,  rod:6,  thread:'M6'},
+  {bore:20,  rod:8,  thread:'M8'},
+  {bore:25,  rod:10, thread:'M10'},
+  {bore:32,  rod:16, thread:'M10×1.25'},
+  {bore:40,  rod:16, thread:'M12×1.25'},
+  {bore:50,  rod:20, thread:'M16×1.5'},
+  {bore:63,  rod:20, thread:'M16×1.5'},
+  {bore:80,  rod:25, thread:'M20×1.5'},
+  {bore:100, rod:32, thread:'M20×1.5'},
+  {bore:125, rod:40, thread:'M27×2'},
+  {bore:160, rod:50, thread:'M30×2'},
+  {bore:200, rod:63, thread:'M36×2'},
+  {bore:250, rod:80, thread:'M42×2'},
+];
+
+const BORE_OPTIONS=BORE_ROD_STD.map(p=>({v:String(p.bore),l:`Ø${p.bore}`}));
+
+function getStdRod(bore){
+  const found=BORE_ROD_STD.find(p=>p.bore===parseInt(bore));
+  return found?found.rod:BORE_ROD_STD.reduce((a,b)=>Math.abs(b.bore-bore)<Math.abs(a.bore-bore)?b:a).rod;
+}
+function getStdThread(bore){
+  const found=BORE_ROD_STD.find(p=>p.bore===parseInt(bore));
+  return found?found.thread:'—';
+}
+
+const PistonForce=({onBack})=>{
+  const [mode,setMode]=useState('push');
+  const [d,setD]=useState(32);
+  const [rod,setRod]=useState(16);   // ISO: Ø32 → Ø16
+  const [rodIsStd,setRodIsStd]=useState(true);
+  const [P,setP]=useState(6);
+
+  const handleBore=(val)=>{
+    const v=parseInt(val);
+    setD(v);
+    const stdRod=getStdRod(v);
+    setRod(stdRod);
+    setRodIsStd(true);
+  };
+  const handleRod=(val)=>{
+    const v=parseFloat(val);
+    if(isNaN(v)||v<=0)return;
+    setRod(v);
+    setRodIsStd(v===getStdRod(d));
+  };
+
+  const calc=useMemo(()=>{
+    const A=mode==='push'?Math.PI/4*d*d:Math.PI/4*(d*d-rod*rod),F=P*0.1*A;
+    return{A:A.toFixed(1),F:F.toFixed(1)};
+  },[mode,d,rod,P]);
+  return(
+    <ToolLayout title="PistonForce Pro-Calc" subtitle="חישוב כוח בוכנות פנאומטיות / הידראוליות" onBack={onBack} accent={C.blue}>
+      <TwoCol
+        left={<div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}>
+            {[{v:'push',l:'דחיפה (Push)',i:'→',c:C.blue},{v:'pull',l:'משיכה (Pull)',i:'←',c:C.orange}].map(m=>(
+              <button key={m.v} onClick={()=>setMode(m.v)} style={{
+                padding:'14px',borderRadius:12,cursor:'pointer',fontSize:14,fontWeight:700,
+                fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'.04em',minHeight:52,
+                background:mode===m.v?`${m.c}22`:C.card,border:`1px solid ${mode===m.v?m.c:C.border}`,
+                color:mode===m.v?m.c:C.muted,transition:'all .2s',
+                boxShadow:mode===m.v?`0 0 16px ${m.c}33`:undefined}}>
+                {m.i} {m.l}
+              </button>
+            ))}
+          </div>
+          <ResultBig label="כוח תיאורטי מחושב" value={calc.F} unit="N" color={C.blue}
+            sub={`F = P × 0.1 × A | A = ${calc.A} mm²`}/>
+          {/* נתוני ציר תקניים */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:14}}>
+            {[
+              {l:'קוטר ציר (D)',v:`Ø${rod} mm`,c:C.blue},
+              {l:'הברגה (ISO)',v:getStdThread(d),c:C.orange},
+              {l:'שטח אפקטיבי',v:`${calc.A} mm²`,c:C.muted},
+            ].map(r=>(
+              <div key={r.l} style={{background:C.surf,border:`1px solid ${r.c}22`,borderRadius:10,
+                padding:'10px 12px',textAlign:'center'}}>
+                <div style={{color:C.muted,fontSize:9,fontWeight:700,letterSpacing:'.08em',marginBottom:5}}>{r.l}</div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace",color:r.c,fontSize:14,fontWeight:600}}>{r.v}</div>
+              </div>
+            ))}
+          </div>
+          <Card style={{padding:22,marginBottom:14}}>
+            <SectionLabel>סכמה מכנית</SectionLabel>
+            <svg viewBox="0 0 380 120" width="100%" style={{display:'block',background:C.bg,borderRadius:10}}>
+              <rect x="25" y="22" width="200" height="76" rx="4" fill={C.card} stroke={C.borderBright} strokeWidth="1.5"/>
+              <rect x={mode==='push'?26:140} y="23" width={mode==='push'?115:84} height="74" fill={`${C.blue}15`} rx="3"/>
+              <rect x={mode==='push'?138:76} y="18" width="6" height="84" fill={C.blue} rx="2"/>
+              <rect x={mode==='push'?144:82} y="18" width="4" height="84" fill={`${C.blue}66`} rx="2"/>
+              <rect x={mode==='push'?225:82} y="51" width="80" height="18" rx="3" fill={C.surf} stroke={C.borderBright} strokeWidth="1.2"/>
+              <polygon points={mode==='push'?'310,51 330,60 310,69':'55,51 35,60 55,69'} fill={C.orange}/>
+              <text x={mode==='push'?80:170} y="64" fill={`${C.blue}88`} fontSize="9" fontFamily="JetBrains Mono">{P} BAR</text>
+              <line x1="20" y1="22" x2="20" y2="98" stroke={C.muted} strokeWidth=".8" strokeDasharray="3 2"/>
+              <text x="8" y="64" fill={C.muted} fontSize="8" transform="rotate(-90,8,64)">d={d}</text>
+            </svg>
+          </Card>
+        </div>}
+        right={<Card style={{padding:20}}>
+          <SectionLabel>פרמטרים הנדסיים</SectionLabel>
+
+          {/* בחירת קוטר בוכנה — גדלים תקניים ISO */}
+          <div style={{marginBottom:18}}>
+            <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:'.07em',marginBottom:8}}>
+              קוטר בוכנה (d) — גדלים תקניים ISO
+            </div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+              {BORE_OPTIONS.map(o=>(
+                <button key={o.v} onClick={()=>handleBore(o.v)} style={{
+                  padding:'7px 10px',borderRadius:7,cursor:'pointer',fontSize:12,
+                  fontFamily:"'JetBrains Mono',monospace",fontWeight:600,minHeight:36,
+                  border:`1px solid ${parseInt(o.v)===d?C.blue:C.border}`,
+                  background:parseInt(o.v)===d?`${C.blue}22`:C.surf,
+                  color:parseInt(o.v)===d?C.blue:C.muted,transition:'all .15s'}}>
+                  {o.l}
+                </button>
+              ))}
+            </div>
+            <div style={{marginTop:8,background:`${C.blue}11`,border:`1px solid ${C.blue}22`,
+              borderRadius:8,padding:'8px 12px',display:'flex',alignItems:'center',gap:10}}>
+              <span style={{color:C.muted,fontSize:11}}>בוכנה נבחרת:</span>
+              <span style={{fontFamily:"'Rajdhani'",color:C.blue,fontSize:22,fontWeight:700}}>Ø{d} mm</span>
+            </div>
+          </div>
+
+          {/* קוטר מוט */}
+          <div style={{marginBottom:6}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+              <span style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:'.07em'}}>קוטר מוט (D)</span>
+              <span style={{
+                background:rodIsStd?`${C.green}22`:`${C.yellow}22`,
+                border:`1px solid ${rodIsStd?C.green:C.yellow}44`,
+                borderRadius:5,padding:'2px 8px',fontSize:9,fontWeight:700,
+                color:rodIsStd?C.green:C.yellow,letterSpacing:'.06em'}}>
+                {rodIsStd?`✓ ISO — Ø${getStdRod(d)} mm`:'⚙ מותאם אישית'}
+              </span>
+            </div>
+          </div>
+          <Inp label="" value={rod} onChange={handleRod} unit="mm" min="1" max={d-1} step="1"/>
+
+          {/* לחץ עבודה */}
+          <Inp label="לחץ עבודה (P)" value={P} onChange={setP} unit="BAR" min="0.1" step="0.1"/>
+          <div style={{background:C.bg,borderRadius:10,padding:14,marginTop:6}}>
+            <div style={{color:C.muted,fontSize:10,letterSpacing:'.1em',marginBottom:8}}>נוסחאות</div>
+            <div style={{color:C.muted,fontSize:12,fontFamily:'monospace',lineHeight:1.9}}>Push: F=P×0.1×(π/4×d²)<br/>Pull: F=P×0.1×(π/4×(d²-D²))</div>
+          </div>
+          <div style={{background:C.surf,borderRadius:10,padding:14,marginTop:10}}>
+            <div style={{color:C.muted,fontSize:10,letterSpacing:'.1em',marginBottom:8}}>
+              זוגות תקניים — ISO 15552 + ISO 6432
+            </div>
+            <div className="tbl-wrap">
+              <table style={{width:'100%',borderCollapse:'collapse',minWidth:280}}>
+                <thead><tr style={{borderBottom:`1px solid ${C.border}`}}>
+                  {['בוכנה','ציר','הברגה'].map(h=>(
+                    <th key={h} style={{padding:'4px 8px',color:C.dim,fontSize:9,
+                      fontWeight:700,letterSpacing:'.08em',textAlign:'right'}}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {BORE_ROD_STD.map(p=>{
+                    const active=d===p.bore;
+                    return(
+                      <tr key={p.bore} style={{background:active?`${C.blue}18`:undefined,
+                        borderBottom:`1px solid ${C.border}22`}}>
+                        <td style={{padding:'4px 8px',fontFamily:'monospace',fontSize:11,
+                          color:active?C.blue:C.dim,fontWeight:active?700:400}}>Ø{p.bore}</td>
+                        <td style={{padding:'4px 8px',fontFamily:'monospace',fontSize:11,
+                          color:active?C.white:C.dim}}>Ø{p.rod}</td>
+                        <td style={{padding:'4px 8px',fontFamily:'monospace',fontSize:11,
+                          color:active?C.orange:C.dim}}>{p.thread}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Card>}
+      />
+    </ToolLayout>
+  );
+};
+
+// ── T9: LINEAR GUIDE ──────────────────────────────────────────
+const LinearGuide=({onBack})=>{
+  const [H,setH]=useState(70);const [dv,setDv]=useState(10);
+  const [b,setB]=useState(200);const [F,setF]=useState(5000);const [mu,setMu]=useState(0.3);
+  const setNum=(setter)=>(v)=>{const n=parseFloat(v);if(!isNaN(n)&&n>0)setter(n);};
+  const calc=useMemo(()=>{
+    const SF=parseFloat(mu)*2*parseFloat(H)/parseFloat(dv);
+    return{SF:isNaN(SF)?'—':SF.toFixed(2),safe:SF>=1.3,ratio:(parseFloat(dv)/(2*parseFloat(H))).toFixed(3)};
+  },[H,dv,mu]);
+  const ac=calc.safe?C.green:C.red;
+  return(
+    <ToolLayout title="Linear Guide — Self-Locking" subtitle="ניתוח כליבה ו-Binding במדריך ליניארי" onBack={onBack} accent={ac}>
+      <TwoCol
+        left={<div>
+          <div style={{background:`${ac}0f`,border:`1px solid ${ac}44`,borderRadius:14,
+            padding:'16px 20px',marginBottom:16,display:'flex',alignItems:'center',gap:14,
+            boxShadow:`0 0 24px ${ac}22`,flexWrap:'wrap'}}>
+            <div style={{width:44,height:44,borderRadius:'50%',background:`${ac}22`,border:`2px solid ${ac}`,
+              display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,color:ac,flexShrink:0}}>
+              {calc.safe?'✓':'✗'}
+            </div>
+            <div>
+              <div style={{fontFamily:"'Rajdhani',sans-serif",color:ac,fontSize:20,fontWeight:700}}>
+                {calc.safe?'מערכת בטוחה':'⚠ סכנת כליבה (Binding)'}
+              </div>
+              <div style={{color:C.muted,fontSize:12,marginTop:2}}>
+                SF={calc.SF} — {calc.safe?'מעל סף המינימום (1.3)':'נמוך מ-1.3. כוח הדחיפה גדול מכוח החיכוך.'}
+              </div>
+            </div>
+          </div>
+          <div className="r-k3" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:16}}>
+            <ResultSm label="מקדם חיכוך (μ)" value={mu} color={C.blue}/>
+            <ResultSm label="יחסי כליבה (d/2H)" value={calc.ratio} color={parseFloat(calc.SF)<1.3?C.red:C.muted}/>
+            <ResultBig label="מקדם בטיחות (SF)" value={calc.SF} color={ac}/>
+          </div>
+          <Card style={{padding:22,marginBottom:14}}>
+            <SectionLabel>FREE BODY DIAGRAM (FBD)</SectionLabel>
+            <svg viewBox="0 0 420 200" width="100%" style={{display:'block',background:C.bg,borderRadius:10,padding:8}}>
+              <rect x="30" y="58" width="360" height="10" fill={C.borderBright} rx="2"/>
+              <rect x="30" y="132" width="360" height="10" fill={C.borderBright} rx="2"/>
+              <rect x={100+Math.min(parseFloat(b)*.06,60)} y="52" width={parseFloat(H)*1.3} height="96" fill={`${ac}18`} stroke={ac} strokeWidth="1.5" rx="3"/>
+              <line x1={78+Math.min(parseFloat(b)*.06,60)} y1="52" x2={78+Math.min(parseFloat(b)*.06,60)} y2="148" stroke={C.white} strokeWidth="1" strokeDasharray="3 2"/>
+              <text x={66+Math.min(parseFloat(b)*.06,60)} y="105" fill={C.white} fontSize="11" fontFamily="JetBrains Mono">H={H}</text>
+              <circle cx={110+Math.min(parseFloat(b)*.06,60)} cy="70" r="5" fill={C.orange}/>
+              <text x={116+Math.min(parseFloat(b)*.06,60)} y="68" fill={C.orange} fontSize="9">N2</text>
+              <circle cx={100+parseFloat(H)*1.3+Math.min(parseFloat(b)*.06,60)} cy="140" r="5" fill={C.orange}/>
+              <text x={106+parseFloat(H)*1.3+Math.min(parseFloat(b)*.06,60)} y="144" fill={C.orange} fontSize="9">N1</text>
+              <polygon points="385,95 405,100 385,105" fill={C.yellow}/>
+              <line x1={100+parseFloat(H)*1.3+Math.min(parseFloat(b)*.06,60)+5} y1="100" x2="385" y2="100" stroke={C.yellow} strokeWidth="1.5"/>
+              <text x="392" y="98" fill={C.yellow} fontSize="11" fontFamily="JetBrains Mono">F</text>
+              <text x="20" y="105" fill={C.muted} fontSize="8" transform="rotate(-90,20,100)" fontFamily="JetBrains Mono">d={dv}</text>
+            </svg>
+          </Card>
+          <Card style={{padding:16}}>
+            <SectionLabel>פעולות מתקנות</SectionLabel>
+            <div className="r-notes" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10}}>
+              {[{s:'μ',t:'הקטן מקדם חיכוך — מתחת ל-0.175'},{s:'H',t:'הגדל אורך מחליק — מינימום 151 מ"מ'},{s:'b',t:'הקטן זרוע כוח — מקסימום 93 מ"מ'}].map(a=>(
+                <div key={a.s} style={{background:C.surf,borderRadius:8,padding:12}}>
+                  <div style={{fontFamily:"'Rajdhani'",color:C.blue,fontSize:22,fontWeight:700,marginBottom:4}}>{a.s}</div>
+                  <div style={{color:C.muted,fontSize:11,lineHeight:1.6}}>{a.t}</div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>}
+        right={<Card style={{padding:20}}>
+          <SectionLabel>גיאומטריה ועומסים</SectionLabel>
+          <Inp label='אורך מחליק (H) מ"מ' value={H} onChange={setNum(setH)} unit="mm" min="20" max="300" step="1"/>
+          <Inp label='רוחב מחליק (d) מ"מ' value={dv} onChange={setNum(setDv)} unit="mm" min="5" max="80" step="1"/>
+          <Inp label='זרוע כוח (b) מ"מ' value={b} onChange={setNum(setB)} unit="mm" min="0" max="500" step="1"/>
+          <Inp label="כוח הפעלה (F)" value={F} onChange={setNum(setF)} unit="N" min="100" max="50000" step="1"/>
+          <Inp label="מקדם חיכוך (μ)" value={mu} onChange={setNum(setMu)} unit="" min="0.01" max="1" step="0.001"/>
+          <div style={{background:C.bg,borderRadius:10,padding:14,marginTop:6}}>
+            <div style={{color:C.muted,fontSize:10,letterSpacing:'.1em',marginBottom:8}}>תנאי בטיחות</div>
+            <div style={{color:C.muted,fontSize:12,fontFamily:'monospace',lineHeight:1.9}}>SF = μ × 2H / d<br/>SF ≥ 1.3 → ✓<br/>SF &lt; 1.0 → ✗</div>
+          </div>
+        </Card>}
+      />
+    </ToolLayout>
+  );
+};
+
+// ── T10: KEYWAY DESIGN ────────────────────────────────────────
+const KW_DATA=[
+  {min:6,max:8,b:2,h:2,t1:1.2,t2:1.0},{min:8,max:10,b:3,h:3,t1:1.8,t2:1.4},
+  {min:10,max:12,b:4,h:4,t1:2.5,t2:1.8},{min:12,max:17,b:5,h:5,t1:3.0,t2:2.3},
+  {min:17,max:22,b:6,h:6,t1:3.5,t2:2.8},{min:22,max:30,b:8,h:7,t1:4.0,t2:3.3},
+  {min:30,max:38,b:10,h:8,t1:5.0,t2:3.3},{min:38,max:44,b:12,h:8,t1:5.0,t2:3.3},
+  {min:44,max:50,b:14,h:9,t1:5.5,t2:3.8},{min:50,max:58,b:16,h:10,t1:6.0,t2:4.3},
+  {min:58,max:65,b:18,h:11,t1:7.0,t2:4.4},{min:65,max:75,b:20,h:12,t1:7.5,t2:4.9},
+  {min:75,max:85,b:22,h:14,t1:9.0,t2:5.4},{min:85,max:95,b:25,h:14,t1:9.0,t2:5.4},
+  {min:95,max:110,b:28,h:16,t1:10.0,t2:6.4},{min:110,max:130,b:32,h:18,t1:11.0,t2:7.4},
+];
+const KeywayDesign=({onBack})=>{
+  const [d,setD]=useState(30);
+  const kw=KW_DATA.find(k=>d>=k.min&&d<k.max)||KW_DATA[KW_DATA.length-1];
+  const center=(d/2+kw.t2).toFixed(2);
+  const sc=90/(d/2);
+  return(
+    <ToolLayout title="Keyway Design Tool" subtitle="DIN 6885-1 / ISO 773" onBack={onBack} accent={C.blue}>
+      <div style={{display:'flex',gap:8,marginBottom:14,flexWrap:'wrap'}}>
+        <Badge>N9 — Standard Fit</Badge><Badge color={C.orange}>DIN 6885-1 / ISO 773</Badge>
+      </div>
+      <TwoCol
+        left={<div>
+          <Card style={{padding:24,marginBottom:16}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12,flexWrap:'wrap',gap:8}}>
+              <div style={{color:C.white,fontSize:14,fontWeight:600}}>שרטוט טכני — חתך רוחב</div>
+              <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+                {[{l:'T2:HUB',c:C.orange},{l:'T1:SHAFT',c:C.blue}].map(b=>(
+                  <span key={b.l} style={{display:'flex',alignItems:'center',gap:4,fontSize:11,color:b.c}}>
+                    <span style={{width:7,height:7,borderRadius:'50%',background:b.c,display:'inline-block'}}/>
+                    {b.l}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div style={{display:'flex',justifyContent:'center',background:C.bg,borderRadius:10,padding:'16px 8px'}}>
+              {(()=>{
+                const cx=150,cy=220,r=90;
+                const sc=r*2/d;
+                const bPx=Math.max(20,kw.b*sc);
+                const t1Px=Math.max(12,kw.t1*sc);
+                const t2Px=Math.max(10,kw.t2*sc);
+                const hPx=t1Px+t2Px;
+                // Key positions
+                const shSurf=cy-r;          // shaft outer surface y
+                const slotTop=shSurf-t2Px;  // top of hub zone
+                const slotBot=shSurf+t1Px;  // bottom of shaft groove
+                const slotL=cx-bPx/2;
+                const slotR=cx+bPx/2;
+                // Dimension zones
+                const leftDim=slotL-16;      // t1/t2 arrow x
+                const leftTxt=slotL-20;      // t1/t2 text x (end)
+                const hDimX=slotR+18;        // h dim line x
+                const hTxtX=slotR+36;        // h text x
+                const farX=cx+r+52;          // d/2+t2 dim x
+                const farTxtX=cx+r+74;       // d/2+t2 text x
+                const bDimY=slotTop-20;      // b dim line y
+                const bTxtY=slotTop-35;      // b text y
+                return(
+                  <svg viewBox="0 0 390 335" width="100%" style={{maxHeight:335}}>
+                    <defs>
+                      <pattern id="kwH" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                        <line x1="0" y1="0" x2="0" y2="5" stroke={C.borderBright} strokeWidth="0.8"/>
+                      </pattern>
+                      <clipPath id="kwC"><circle cx={cx} cy={cy} r={r}/></clipPath>
+                      <marker id="kwUp" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="5" markerHeight="5" orient="270"><polygon points="0,1 8,4 0,7" fill={C.muted}/></marker>
+                      <marker id="kwDn" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="5" markerHeight="5" orient="90"><polygon points="0,1 8,4 0,7" fill={C.muted}/></marker>
+                      <marker id="kwL" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="5" markerHeight="5" orient="180"><polygon points="0,1 8,4 0,7" fill={C.muted}/></marker>
+                      <marker id="kwR" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="5" markerHeight="5" orient="0"><polygon points="0,1 8,4 0,7" fill={C.muted}/></marker>
+                    </defs>
+
+                    {/* Center lines */}
+                    <line x1={cx} y1="4" x2={cx} y2="326" stroke={C.dim} strokeWidth="0.7" strokeDasharray="10 4 2 4"/>
+                    <line x1="4" y1={cy} x2={farX+40} y2={cy} stroke={C.dim} strokeWidth="0.7" strokeDasharray="10 4 2 4"/>
+
+                    {/* Shaft — hatched circle */}
+                    <circle cx={cx} cy={cy} r={r} fill={`${C.blue}12`}/>
+                    <circle cx={cx} cy={cy} r={r} fill="url(#kwH)" opacity="0.25" clipPath="url(#kwC)"/>
+
+                    {/* ── KEYWAY SLOT ── */}
+                    {/* Shaft portion (t1) — cut into shaft, shown as void */}
+                    <rect x={slotL} y={shSurf} width={bPx} height={t1Px} fill={C.bg}/>
+                    <line x1={slotL} y1={shSurf} x2={slotL} y2={slotBot} stroke={C.borderBright} strokeWidth="2"/>
+                    <line x1={slotR} y1={shSurf} x2={slotR} y2={slotBot} stroke={C.borderBright} strokeWidth="2"/>
+                    <line x1={slotL} y1={slotBot} x2={slotR} y2={slotBot} stroke={C.borderBright} strokeWidth="2"/>
+
+                    {/* Hub portion (t2) — above shaft surface, orange dashed outline */}
+                    <rect x={slotL} y={slotTop} width={bPx} height={t2Px}
+                      fill={`${C.orange}1a`} stroke={C.orange} strokeWidth="1.3" strokeDasharray="6 3"/>
+
+                    {/* Shaft circle outline */}
+                    <circle cx={cx} cy={cy} r={r} fill="none" stroke={C.borderBright} strokeWidth="2"/>
+
+                    {/* Center cross */}
+                    <line x1={cx-9} y1={cy} x2={cx+9} y2={cy} stroke={C.dim} strokeWidth="1.2"/>
+                    <line x1={cx} y1={cy-9} x2={cx} y2={cy+9} stroke={C.dim} strokeWidth="1.2"/>
+                    <text x={cx+13} y={cy+5} fill={C.dim} fontSize="9" fontFamily="JetBrains Mono">CENTER CL</text>
+
+                    {/* ══ DIMENSIONS ══ */}
+
+                    {/* ── b (width) — top, full span ── */}
+                    <line x1={slotL} y1={bDimY} x2={slotR} y2={bDimY} stroke={C.blue} strokeWidth="1.4"
+                      markerStart="url(#kwL)" markerEnd="url(#kwR)"/>
+                    <line x1={slotL} y1={bDimY+4} x2={slotL} y2={slotTop-2} stroke={C.blue} strokeWidth="0.7"/>
+                    <line x1={slotR} y1={bDimY+4} x2={slotR} y2={slotTop-2} stroke={C.blue} strokeWidth="0.7"/>
+                    <rect x={cx-38} y={bTxtY-13} width={76} height={16} fill={C.bg} rx="2"/>
+                    <text x={cx} y={bTxtY} textAnchor="middle" fill={C.blue} fontSize="14" fontFamily="JetBrains Mono" fontWeight="700">b = {kw.b}</text>
+
+                    {/* ── t2 — left, shaft surface → hub top ── */}
+                    <line x1={leftDim-10} y1={shSurf} x2={slotL-3} y2={shSurf} stroke={C.orange} strokeWidth="0.8"/>
+                    <line x1={leftDim-10} y1={slotTop} x2={slotL-3} y2={slotTop} stroke={C.orange} strokeWidth="0.8"/>
+                    <line x1={leftDim} y1={shSurf} x2={leftDim} y2={slotTop} stroke={C.orange} strokeWidth="1.3"
+                      markerStart="url(#kwDn)" markerEnd="url(#kwUp)"/>
+                    <rect x={leftTxt-40} y={(shSurf+slotTop)/2-9} width={38} height={18} fill={C.bg} rx="2"/>
+                    <text x={leftTxt} y={(shSurf+slotTop)/2+6} textAnchor="end" fill={C.orange} fontSize="13" fontFamily="JetBrains Mono" fontWeight="700">t2</text>
+
+                    {/* ── t1 — left, shaft surface → groove bottom ── */}
+                    <line x1={leftDim-10} y1={shSurf} x2={slotL-3} y2={shSurf} stroke={C.blue} strokeWidth="0.8"/>
+                    <line x1={leftDim-10} y1={slotBot} x2={slotL-3} y2={slotBot} stroke={C.blue} strokeWidth="0.8"/>
+                    <line x1={leftDim} y1={shSurf} x2={leftDim} y2={slotBot} stroke={C.blue} strokeWidth="1.3"
+                      markerStart="url(#kwUp)" markerEnd="url(#kwDn)"/>
+                    <rect x={leftTxt-40} y={(shSurf+slotBot)/2-9} width={38} height={18} fill={C.bg} rx="2"/>
+                    <text x={leftTxt} y={(shSurf+slotBot)/2+6} textAnchor="end" fill={C.blue} fontSize="13" fontFamily="JetBrains Mono" fontWeight="700">t1</text>
+
+                    {/* ── h — right of slot, full height (t1+t2) ── */}
+                    <line x1={slotR+3} y1={slotTop} x2={hDimX+10} y2={slotTop} stroke={C.white} strokeWidth="0.8"/>
+                    <line x1={slotR+3} y1={slotBot} x2={hDimX+10} y2={slotBot} stroke={C.white} strokeWidth="0.8"/>
+                    <line x1={hDimX} y1={slotTop} x2={hDimX} y2={slotBot} stroke={C.white} strokeWidth="1.3"
+                      markerStart="url(#kwUp)" markerEnd="url(#kwDn)"/>
+                    <rect x={hTxtX-9} y={(slotTop+slotBot)/2-40} width={20} height={80} fill={C.bg} rx="2"/>
+                    <text x={hTxtX} y={(slotTop+slotBot)/2+5} textAnchor="middle" fill={C.white} fontSize="13" fontFamily="JetBrains Mono" fontWeight="700"
+                      transform={`rotate(-90,${hTxtX},${(slotTop+slotBot)/2})`}>h = {kw.h}</text>
+
+                    {/* ── d/2 + t2 — far right, center to hub top ── */}
+                    <line x1={cx+r+4} y1={cy} x2={farX+10} y2={cy} stroke={`${C.green}55`} strokeWidth="0.7" strokeDasharray="4 3"/>
+                    <line x1={slotR+3} y1={slotTop} x2={farX+10} y2={slotTop} stroke={`${C.green}55`} strokeWidth="0.7" strokeDasharray="4 3"/>
+                    <line x1={farX} y1={cy} x2={farX} y2={slotTop} stroke={C.green} strokeWidth="1.5"
+                      markerStart="url(#kwUp)" markerEnd="url(#kwDn)"/>
+                    <rect x={farTxtX-11} y={(cy+slotTop)/2-58} width={24} height={116} fill={C.bg} rx="2"/>
+                    <text x={farTxtX} y={(cy+slotTop)/2+5} textAnchor="middle" fill={C.green} fontSize="13" fontFamily="JetBrains Mono" fontWeight="700"
+                      transform={`rotate(-90,${farTxtX},${(cy+slotTop)/2})`}>d/2 + t2 = {center}</text>
+
+                    {/* Bottom label */}
+                    <text x={cx} y="328" textAnchor="middle" fill={C.muted} fontSize="10" fontFamily="JetBrains Mono">חתך ציר — DIN 6885-1</text>
+                  </svg>
+                );
+              })()}
+            </div>
+          </Card>
+          <Card style={{overflow:'hidden'}}>
+            <div style={{padding:'11px 16px',background:C.surf,borderBottom:`1px solid ${C.border}`,display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
+              <Badge color={C.orange}>DIN 6885-1</Badge>
+              <span style={{color:C.muted,fontSize:12}}>ערכים לייצור וביקורת (mm)</span>
+            </div>
+            <div className="tbl-wrap">
+              <table style={{width:'100%',borderCollapse:'collapse',minWidth:380}}>
+                <thead><tr style={{background:C.surf}}>
+                  {['קוטר D','b×h','T1','T2','d/2+T2'].map(h=>(
+                    <th key={h} style={{padding:'9px 12px',color:C.muted,fontSize:10,fontWeight:700,letterSpacing:'.07em',textAlign:'right',borderBottom:`1px solid ${C.border}`}}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {KW_DATA.map((k,i)=>{
+                    const act=d>=k.min&&d<k.max;
+                    return(
+                      <tr key={i} style={{borderBottom:`1px solid ${C.border}`,background:act?`${C.blue}0f`:'transparent'}}>
+                        <td style={{padding:'8px 12px',fontFamily:'monospace',fontSize:12,color:act?C.blue:C.muted}}>{k.min}–{k.max}</td>
+                        <td style={{padding:'8px 12px'}}><Mono s={12} c={act?C.white:C.muted}>{k.b}×{k.h}</Mono></td>
+                        <td style={{padding:'8px 12px'}}><Mono s={12} c={act?C.blue:C.dim}>{k.t1}</Mono></td>
+                        <td style={{padding:'8px 12px'}}><Mono s={12} c={act?C.orange:C.dim}>{k.t2}</Mono></td>
+                        <td style={{padding:'8px 12px',fontFamily:'monospace',fontSize:12,color:act?C.green:C.dim}}>{(k.min/2+k.t2).toFixed(2)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>}
+        right={<Card style={{padding:20}}>
+          <SectionLabel>קלט נתונים</SectionLabel>
+          <Inp label="קוטר הציר (d)" value={d} onChange={v=>{const n=parseInt(v);if(!isNaN(n)&&n>0)setD(n);}} unit="mm" min="6" max="130" step="1"/>
+          <div style={{height:1,background:C.border,margin:'14px 0'}}/>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
+            {[{l:'גובה שגם H',v:kw.h,c:C.white},{l:'רוחב שגם B',v:kw.b,c:C.white},{l:'עומק נבור T2',v:kw.t2,c:C.orange},{l:'עומק ציר T1',v:kw.t1,c:C.blue}].map(r=>(
+              <div key={r.l} style={{background:C.bg,border:`1px solid ${r.c}22`,borderRadius:10,padding:12,textAlign:'center'}}>
+                <div style={{color:C.muted,fontSize:10,marginBottom:5}}>{r.l}</div>
+                <div style={{fontFamily:"'Rajdhani'",color:r.c,fontSize:26,fontWeight:700}}>{r.v}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{background:`${C.blue}11`,border:`1px solid ${C.blue}33`,borderRadius:12,padding:16,textAlign:'center'}}>
+            <div style={{color:C.blue,fontSize:11,fontWeight:600,marginBottom:5}}>⊙ מידה במרכז (d/2 + T2)</div>
+            <div style={{fontFamily:"'Rajdhani'",color:C.blue,fontSize:36,fontWeight:700}}>{center}</div>
+            <div style={{color:C.blue,fontSize:14}}>מ"מ</div>
+          </div>
+        </Card>}
+      />
+    </ToolLayout>
+  );
+};
+
+// ── T11: FIT ADVISOR ──────────────────────────────────────────
+const FIT_DATA={
+  clearance:[
+    {code:'H11/d11',tags:['CHEAP','LOOSE'],app:'צירים גסים, חלקי חקלאות, מנגנוני נעילה רפויים',notes:'סבולות גסה (IT11). זול מאוד לייצור.'},
+    {code:'H9/e9',tags:['ROTATION','SUPPORT'],app:'גלילי תמיכה, מסבי חלקה פשוטים',notes:'מתאים לרחרוחים גדולים ומהירויות נמוכות.'},
+    {code:'H8/f7',tags:['MOTOR','STANDARD'],app:'גלגלים חופשיים, מנועים חשמליים, גלי כרנק',notes:'אפיצות "סוס עבודה" — למכונות תעשייתיות.'},
+    {code:'H7/g6',tags:['PRECISION','SLIDING'],app:'מחוונים, ציריות דיוק, מחלקי זווית',notes:'מרווח קטן — מחייב שמן. 0.002–0.02 mm מרווח.'},
+    {code:'H7/h6',tags:['LOCATION','FREE'],app:'גלגלים חופשיים, מחלקי זווית',notes:'אפיצות מקומית — כמעט אפס מרווח.'},
+  ],
+  transition:[
+    {code:'H7/j6',tags:['EASY-PUSH','GEAR'],app:'גלגלי שיניים, גלגלות, נאבות שמסירים לעיתים',notes:'אפיצות בינית קלה — הרכבה ביד אפשרית לעיתים.'},
+    {code:'H7/k6',tags:['STANDARD','KEYED'],app:'גלגלי שיניים, מסבי גלגורת עם בורג נעילה',notes:'אפיצות בינית סטנדרטית. מחייב מכבש קל.'},
+    {code:'H7/m6',tags:['CLOSE','PRESS'],app:'אלמנטים שנדרשת הרכבה מדויקת ויציבה',notes:'קרוב לדחיקה. מחייב מכבש והתאמה טובה.'},
+  ],
+  interference:[
+    {code:'H7/n6',tags:['LIGHT-PRESS','HUB'],app:'רכזות, צמידים, גלגלי שיניים קבועים',notes:'דחיקה קלה. מחייב חימום או מכבש.'},
+    {code:'H7/p6',tags:['STANDARD-PRESS','FIXED'],app:'נאבות קבועות, רכזות כבדות',notes:'דחיקה סטנדרטית. חימום ל-80–150°C.'},
+    {code:'H7/s6',tags:['HEAVY-PRESS','PERMANENT'],app:'חיבורים קבועים ללא בורג',notes:'דחיקה כבדה. חימום ל-150–250°C. לא ניתן לפירוק.'},
+  ],
+};
+const FIT_CATS=[{v:'clearance',l:'רווחה (Clearance)',c:C.green},{v:'transition',l:'בינית (Transition)',c:C.yellow},{v:'interference',l:'דחיקה (Interference)',c:C.red}];
+
+const FitAdvisor=({onBack})=>{
+  const [cat,setCat]=useState('clearance');
+  const fits=FIT_DATA[cat];const acc=FIT_CATS.find(c=>c.v===cat).c;
+  return(
+    <ToolLayout title="FitAdvisor Pro 4.7" subtitle="ISO 286 — בחירת אפיציות" onBack={onBack} accent={acc}>
+      <div style={{display:'flex',gap:8,marginBottom:20,flexWrap:'wrap'}}>
+        {FIT_CATS.map(c=>(
+          <button key={c.v} onClick={()=>setCat(c.v)} style={{
+            padding:'10px 20px',borderRadius:9,cursor:'pointer',fontWeight:700,fontSize:13,
+            fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'.04em',minHeight:44,
+            background:cat===c.v?`${c.c}22`:C.card,border:`1px solid ${cat===c.v?c.c:C.border}`,
+            color:cat===c.v?c.c:C.muted,transition:'all .2s',
+            boxShadow:cat===c.v?`0 0 14px ${c.c}33`:undefined}}>
+            {c.l}
+          </button>
+        ))}
+      </div>
+      <TwoCol
+        left={<div>
+          {fits.map((f,i)=>(
+            <Card key={i} style={{padding:20,marginBottom:12,transition:'all .2s',cursor:'default'}}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor=`${acc}44`;e.currentTarget.style.transform='translateX(-2px)';}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.transform='';}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12,flexWrap:'wrap',gap:8}}>
+                <div>
+                  <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:8}}>
+                    <Badge color={C.blue} size={9}>DEEP ANALYSIS</Badge>
+                    {f.tags.map(t=><span key={t} style={{background:C.surf,color:C.muted,borderRadius:4,padding:'2px 6px',fontSize:9,fontFamily:'monospace'}}>#{t}</span>)}
+                  </div>
+                  <div style={{fontFamily:"'Rajdhani',sans-serif",color:acc,fontSize:40,fontWeight:700,lineHeight:1}}>{f.code}</div>
+                </div>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                <div>
+                  <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:'.08em',marginBottom:4}}>⚙ יישום הנדסי</div>
+                  <div style={{color:C.white,fontSize:13,lineHeight:1.6}}>{f.app}</div>
+                </div>
+                <div>
+                  <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:'.08em',marginBottom:4}}>ℹ דגשים</div>
+                  <div style={{color:C.muted,fontSize:12,lineHeight:1.6}}>{f.notes}</div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>}
+        right={<div>
+          <Card style={{padding:18,marginBottom:12}}>
+            <SectionLabel>סינון</SectionLabel>
+            {FIT_CATS.map(c=>(
+              <button key={c.v} onClick={()=>setCat(c.v)} style={{width:'100%',textAlign:'right',
+                padding:'12px 14px',borderRadius:9,marginBottom:8,cursor:'pointer',minHeight:44,
+                display:'flex',justifyContent:'space-between',alignItems:'center',
+                background:cat===c.v?`${c.c}22`:C.surf,border:`1px solid ${cat===c.v?`${c.c}44`:C.border}`,
+                color:cat===c.v?c.c:C.muted,fontSize:13,transition:'all .2s'}}>
+                <span>{c.l}</span><span>›</span>
+              </button>
+            ))}
+          </Card>
+          <Card style={{padding:16}}>
+            <SectionLabel>הדבקה מבנית</SectionLabel>
+            <div style={{color:C.muted,fontSize:12,lineHeight:1.7,marginBottom:10}}>מרווח רדיאלי אופטימלי:</div>
+            <div style={{background:`${C.green}11`,border:`1px solid ${C.green}33`,borderRadius:8,padding:12,textAlign:'center'}}>
+              <Mono c={C.green} s={14}>0.04 – 0.08 mm</Mono>
+            </div>
+          </Card>
+        </div>}
+      />
+    </ToolLayout>
+  );
+};
+
+// ── T12: SNAP RING ────────────────────────────────────────────
+const DIN471=[{d:10,d2:9.3,m:1.0,n:1.2},{d:12,d2:11.0,m:1.0,n:1.4},{d:15,d2:14.1,m:1.1,n:1.6},{d:17,d2:16.1,m:1.1,n:1.7},{d:20,d2:18.9,m:1.2,n:2.1},{d:22,d2:20.8,m:1.2,n:2.1},{d:25,d2:23.9,m:1.2,n:2.5},{d:28,d2:26.6,m:1.2,n:2.6},{d:30,d2:28.6,m:1.5,n:2.8},{d:32,d2:30.3,m:1.5,n:3.0},{d:35,d2:32.2,m:1.5,n:3.2},{d:40,d2:37.5,m:1.75,n:3.75},{d:45,d2:42.5,m:1.75,n:4.0},{d:50,d2:47.0,m:2.0,n:4.5},{d:55,d2:52.0,m:2.0,n:4.5},{d:60,d2:57.0,m:2.0,n:5.0},{d:65,d2:62.0,m:2.5,n:5.0},{d:70,d2:67.0,m:2.5,n:5.5},{d:80,d2:76.5,m:2.5,n:5.5},{d:85,d2:81.5,m:3.0,n:6.0},{d:90,d2:86.5,m:3.0,n:6.0},{d:100,d2:96.5,m:3.0,n:6.5}];
+const DIN472=[{d:10,d2:10.7,m:1.0,n:1.2},{d:12,d2:12.9,m:1.0,n:1.4},{d:15,d2:15.9,m:1.1,n:1.6},{d:18,d2:19.1,m:1.2,n:1.9},{d:20,d2:21.1,m:1.2,n:2.1},{d:22,d2:23.1,m:1.2,n:2.1},{d:25,d2:26.1,m:1.2,n:2.5},{d:28,d2:29.4,m:1.2,n:2.6},{d:30,d2:31.4,m:1.5,n:2.8},{d:32,d2:33.7,m:1.5,n:3.0},{d:35,d2:36.8,m:1.5,n:3.2},{d:40,d2:42.5,m:1.75,n:3.75},{d:45,d2:47.5,m:1.75,n:4.0},{d:50,d2:52.5,m:2.0,n:4.5},{d:55,d2:57.5,m:2.0,n:4.5},{d:60,d2:63.0,m:2.0,n:5.0},{d:65,d2:68.0,m:2.5,n:5.0},{d:70,d2:73.0,m:2.5,n:5.5},{d:80,d2:83.5,m:2.5,n:5.5},{d:85,d2:88.5,m:3.0,n:6.0},{d:90,d2:93.5,m:3.0,n:6.0},{d:100,d2:104.5,m:3.0,n:6.5}];
+
+const SnapRing=({onBack})=>{
+  const [type,setType]=useState('471');const [dv,setDv]=useState(32);
+  const data=type==='471'?DIN471:DIN472;
+  const row=data.find(r=>r.d===parseInt(dv))||data.reduce((a,b)=>Math.abs(b.d-dv)<Math.abs(a.d-dv)?b:a);
+  const isExact=data.some(r=>r.d===parseInt(dv));
+  return(
+    <ToolLayout title="מחשבון DIN 471/472" subtitle="מידות חריצים לסנפרינג" onBack={onBack} accent={C.blue}>
+      <TwoCol
+        left={<div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}>
+            {[{v:'471',l:'חיצוני — DIN 471',sub:'לצירים'},{v:'472',l:'פנימי — DIN 472',sub:'לקדחים'}].map(t=>(
+              <button key={t.v} onClick={()=>setType(t.v)} style={{
+                padding:'14px',borderRadius:12,cursor:'pointer',textAlign:'center',minHeight:52,
+                background:type===t.v?`${C.blue}22`:C.card,border:`1px solid ${type===t.v?C.blue:C.border}`,
+                transition:'all .2s',boxShadow:type===t.v?`0 0 14px ${C.blue}33`:undefined}}>
+                <div style={{fontFamily:"'Barlow Condensed'",color:type===t.v?C.blue:C.muted,fontSize:15,fontWeight:700}}>{t.l}</div>
+                <div style={{color:C.muted,fontSize:11,marginTop:2}}>{t.sub}</div>
+              </button>
+            ))}
+          </div>
+          {row&&<Card glow={`${C.blue}44`} accent={C.blue} style={{padding:22,marginBottom:14}}>
+            <div style={{display:'flex',gap:8,marginBottom:14,flexWrap:'wrap'}}>
+              <Badge color={C.orange}>DIN {type}</Badge>
+              {!isExact&&<Badge color={C.yellow}>קרוב ביותר: {row.d}</Badge>}
+            </div>
+            <div style={{background:C.bg,borderRadius:12,padding:'16px 12px',display:'flex',justifyContent:'center',marginBottom:16}}>
+              {(()=>{
+                const W=500,H=260,cy=H/2;
+                const sx=52,ex=445;
+                const shR=52,grD=16;
+                const nPx=Math.min(95,Math.max(58,row.n*14));
+                const mPx=Math.min(52,Math.max(24,row.m*16));
+                const gx1=sx+nPx,gx2=gx1+mPx,gmx=(gx1+gx2)/2;
+                const ty=cy-shR,by=cy+shR;
+                const mc=C.muted;
+                const acc=type==='471'?C.blue:C.orange;
+
+                // DIN 472: bore tube (inner=shR, outer=shR+wallT)
+                const wallT=22,grR472=shR+grD;
+                const wty=cy-(shR+wallT),wby=cy+(shR+wallT);
+
+                return(
+                  <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{display:'block'}}>
+                    <defs>
+                      <pattern id={`sr${type}`} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                        <line x1="0" y1="0" x2="0" y2="5" stroke={C.borderBright} strokeWidth="0.8"/>
+                      </pattern>
+                      <marker id={`sah${type}`} viewBox="0 0 8 8" refX="4" refY="4" markerWidth="4" markerHeight="4" orient="auto">
+                        <polygon points="0,1 8,4 0,7" fill={mc}/>
+                      </marker>
+                      <marker id={`sat${type}`} viewBox="0 0 8 8" refX="4" refY="4" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+                        <polygon points="0,1 8,4 0,7" fill={mc}/>
+                      </marker>
+                    </defs>
+
+                    {type==='471'?(
+                      /* ══ DIN 471 — EXTERNAL (SHAFT) ══ */
+                      <g>
+                        {/* Shaft left */}
+                        <rect x={sx} y={ty} width={gx1-sx} height={shR*2} fill={`${acc}14`}/>
+                        <rect x={sx} y={ty} width={gx1-sx} height={shR*2} fill={`url(#sr${type})`} opacity="0.3"/>
+                        <line x1={sx} y1={ty} x2={gx1} y2={ty} stroke={C.borderBright} strokeWidth="2"/>
+                        <line x1={sx} y1={by} x2={gx1} y2={by} stroke={C.borderBright} strokeWidth="2"/>
+                        <line x1={sx} y1={ty} x2={sx} y2={by} stroke={C.borderBright} strokeWidth="2"/>
+                        {/* Groove walls top */}
+                        <line x1={gx1} y1={ty} x2={gx1} y2={ty+grD} stroke={C.borderBright} strokeWidth="2"/>
+                        <line x1={gx1} y1={ty+grD} x2={gx2} y2={ty+grD} stroke={C.borderBright} strokeWidth="2"/>
+                        <line x1={gx2} y1={ty+grD} x2={gx2} y2={ty} stroke={C.borderBright} strokeWidth="2"/>
+                        {/* Groove walls bottom */}
+                        <line x1={gx1} y1={by} x2={gx1} y2={by-grD} stroke={C.borderBright} strokeWidth="2"/>
+                        <line x1={gx1} y1={by-grD} x2={gx2} y2={by-grD} stroke={C.borderBright} strokeWidth="2"/>
+                        <line x1={gx2} y1={by-grD} x2={gx2} y2={by} stroke={C.borderBright} strokeWidth="2"/>
+                        {/* Shaft right */}
+                        <rect x={gx2} y={ty} width={ex-gx2} height={shR*2} fill={`${acc}14`}/>
+                        <rect x={gx2} y={ty} width={ex-gx2} height={shR*2} fill={`url(#sr${type})`} opacity="0.3"/>
+                        <line x1={gx2} y1={ty} x2={ex} y2={ty} stroke={C.borderBright} strokeWidth="2"/>
+                        <line x1={gx2} y1={by} x2={ex} y2={by} stroke={C.borderBright} strokeWidth="2"/>
+                        <line x1={ex} y1={ty} x2={ex} y2={by} stroke={C.borderBright} strokeWidth="2"/>
+                        {/* Snap ring cross-sections — ring sits IN groove, slightly above shaft surface */}
+                        <rect x={gx1+2} y={ty-5} width={mPx-4} height={grD+6} rx="2" fill={acc} stroke={acc} strokeWidth="1.5" opacity=".85"/>
+                        <rect x={gx1+2} y={by-grD-1} width={mPx-4} height={grD+6} rx="2" fill={acc} stroke={acc} strokeWidth="1.5" opacity=".85"/>
+                        {/* Ring label with pointer */}
+                        <line x1={gx1+mPx/2} y1={ty-5} x2={gx1+mPx/2-5} y2={ty-28} stroke={acc} strokeWidth="0.9"/>
+                        <text x={gx1+mPx/2-7} y={ty-31} textAnchor="middle" fill={acc} fontSize="10" fontFamily="JetBrains Mono" fontWeight="600">Snap Ring</text>
+                      </g>
+                    ):(
+                      /* ══ DIN 472 — INTERNAL (BORE) ══ */
+                      <g>
+                        {[{y1:wty,y2:cy-shR},{y1:cy+shR,y2:wby}].map((w,wi)=>(
+                          <g key={wi}>
+                            {/* Wall left of groove */}
+                            <rect x={sx} y={w.y1} width={gx1-sx} height={w.y2-w.y1} fill={`${acc}14`}/>
+                            <rect x={sx} y={w.y1} width={gx1-sx} height={w.y2-w.y1} fill={`url(#sr${type})`} opacity="0.3"/>
+                            <line x1={sx} y1={w.y1} x2={gx1} y2={w.y1} stroke={C.borderBright} strokeWidth="2"/>
+                            <line x1={sx} y1={w.y2} x2={gx1} y2={w.y2} stroke={C.borderBright} strokeWidth="2"/>
+                            <line x1={sx} y1={w.y1} x2={sx} y2={w.y2} stroke={C.borderBright} strokeWidth="2"/>
+                            {/* Wall right of groove */}
+                            <rect x={gx2} y={w.y1} width={ex-gx2} height={w.y2-w.y1} fill={`${acc}14`}/>
+                            <rect x={gx2} y={w.y1} width={ex-gx2} height={w.y2-w.y1} fill={`url(#sr${type})`} opacity="0.3"/>
+                            <line x1={gx2} y1={w.y1} x2={ex} y2={w.y1} stroke={C.borderBright} strokeWidth="2"/>
+                            <line x1={gx2} y1={w.y2} x2={ex} y2={w.y2} stroke={C.borderBright} strokeWidth="2"/>
+                            <line x1={ex} y1={w.y1} x2={ex} y2={w.y2} stroke={C.borderBright} strokeWidth="2"/>
+                          </g>
+                        ))}
+                        {/* Groove top */}
+                        <line x1={gx1} y1={cy-shR} x2={gx1} y2={cy-grR472} stroke={C.borderBright} strokeWidth="2"/>
+                        <line x1={gx1} y1={cy-grR472} x2={gx2} y2={cy-grR472} stroke={C.borderBright} strokeWidth="2"/>
+                        <line x1={gx2} y1={cy-grR472} x2={gx2} y2={cy-shR} stroke={C.borderBright} strokeWidth="2"/>
+                        {/* Groove bottom */}
+                        <line x1={gx1} y1={cy+shR} x2={gx1} y2={cy+grR472} stroke={C.borderBright} strokeWidth="2"/>
+                        <line x1={gx1} y1={cy+grR472} x2={gx2} y2={cy+grR472} stroke={C.borderBright} strokeWidth="2"/>
+                        <line x1={gx2} y1={cy+grR472} x2={gx2} y2={cy+shR} stroke={C.borderBright} strokeWidth="2"/>
+                        {/* Snap ring — inside groove, close to bore surface */}
+                        <rect x={gx1+2} y={cy-shR-grD+2} width={mPx-4} height={grD-2} rx="2" fill={acc} stroke={acc} strokeWidth="1.5" opacity=".85"/>
+                        {/* Snap ring bottom */}
+                        <rect x={gx1+2} y={cy+shR+1} width={mPx-4} height={grD-2} rx="2" fill={acc} stroke={acc} strokeWidth="1.5" opacity=".85"/>
+                        {/* Label */}
+                        <line x1={gmx} y1={cy-shR-grD+2} x2={gmx} y2={wty-14} stroke={acc} strokeWidth="0.9"/>
+                        <text x={gmx} y={wty-17} textAnchor="middle" fill={acc} fontSize="10" fontFamily="JetBrains Mono" fontWeight="600">Snap Ring</text>
+                      </g>
+                    )}
+
+                    {/* ══ SHARED ELEMENTS ══ */}
+                    {/* Center line */}
+                    <line x1={sx-18} y1={cy} x2={ex+18} y2={cy} stroke={C.dim} strokeWidth="0.8" strokeDasharray="12 4 2 4"/>
+
+                    {/* ── d1: shaft/bore diameter ── */}
+                    {(()=>{
+                      const dY1=type==='471'?ty:cy-shR, dY2=type==='471'?by:cy+shR;
+                      const dX=sx-32;
+                      return(
+                        <g>
+                          <line x1={dX+14} y1={dY1} x2={sx-4} y2={dY1} stroke={C.white} strokeWidth="0.8"/>
+                          <line x1={dX+14} y1={dY2} x2={sx-4} y2={dY2} stroke={C.white} strokeWidth="0.8"/>
+                          <line x1={dX+8} y1={dY1+5} x2={dX+8} y2={cy-7} stroke={C.white} strokeWidth="1" markerEnd={`url(#sah${type})`}/>
+                          <line x1={dX+8} y1={dY2-5} x2={dX+8} y2={cy+7} stroke={C.white} strokeWidth="1" markerEnd={`url(#sah${type})`}/>
+                          <rect x={dX-1} y={cy-9} width={18} height={18} fill={C.bg} rx="2"/>
+                          <text x={dX+8} y={cy+4} textAnchor="middle" fill={C.white} fontSize="12" fontFamily="JetBrains Mono" fontWeight="700" transform={`rotate(-90,${dX+8},${cy})`}>Ø{row.d}</text>
+                        </g>
+                      );
+                    })()}
+
+                    {/* ── d2: groove diameter ── */}
+                    {(()=>{
+                      const gY1=type==='471'?ty+grD:cy-grR472, gY2=type==='471'?by-grD:cy+grR472;
+                      const d2X=gx1-26;
+                      return(
+                        <g>
+                          <line x1={d2X+14} y1={gY1} x2={gx1-2} y2={gY1} stroke={acc} strokeWidth="0.8"/>
+                          <line x1={d2X+14} y1={gY2} x2={gx1-2} y2={gY2} stroke={acc} strokeWidth="0.8"/>
+                          <line x1={d2X+8} y1={gY1+5} x2={d2X+8} y2={cy-7} stroke={acc} strokeWidth="1" markerEnd={`url(#sah${type})`}/>
+                          <line x1={d2X+8} y1={gY2-5} x2={d2X+8} y2={cy+7} stroke={acc} strokeWidth="1" markerEnd={`url(#sah${type})`}/>
+                          <rect x={d2X-1} y={cy-9} width={20} height={18} fill={C.bg} rx="2"/>
+                          <text x={d2X+8} y={cy+4} textAnchor="middle" fill={acc} fontSize="11" fontFamily="JetBrains Mono" fontWeight="700" transform={`rotate(-90,${d2X+8},${cy})`}>Ø{row.d2}</text>
+                        </g>
+                      );
+                    })()}
+
+                    {/* ── m: groove width — full span, text well above line ── */}
+                    {(()=>{
+                      const abY=type==='471'?ty-46:wty-46;
+                      return(
+                        <g>
+                          <line x1={gx1} y1={abY+26} x2={gx1} y2={type==='471'?ty:wty} stroke={C.yellow} strokeWidth="0.7" strokeDasharray="3 3"/>
+                          <line x1={gx2} y1={abY+26} x2={gx2} y2={type==='471'?ty:wty} stroke={C.yellow} strokeWidth="0.7" strokeDasharray="3 3"/>
+                          <line x1={gx1} y1={abY+22} x2={gx2} y2={abY+22} stroke={C.yellow} strokeWidth="1.4" markerStart={`url(#sat${type})`} markerEnd={`url(#sah${type})`}/>
+                          <rect x={gmx-32} y={abY+4} width={64} height={16} fill={C.bg} rx="2"/>
+                          <text x={gmx} y={abY+16} textAnchor="middle" fill={C.yellow} fontSize="12" fontFamily="JetBrains Mono" fontWeight="700">m = {row.m}</text>
+                        </g>
+                      );
+                    })()}
+
+                    {/* ── n: edge distance — full span, text below with clearance ── */}
+                    {(()=>{
+                      const belY=type==='471'?by+22:wby+22;
+                      return(
+                        <g>
+                          <line x1={sx} y1={belY-4} x2={sx} y2={belY+14} stroke={C.green} strokeWidth="0.9"/>
+                          <line x1={gx1} y1={belY-4} x2={gx1} y2={belY+14} stroke={C.green} strokeWidth="0.9"/>
+                          <line x1={sx} y1={belY+4} x2={gx1} y2={belY+4} stroke={C.green} strokeWidth="1.4" markerStart={`url(#sat${type})`} markerEnd={`url(#sah${type})`}/>
+                          <rect x={(sx+gx1)/2-32} y={belY+14} width={64} height={16} fill={C.bg} rx="2"/>
+                          <text x={(sx+gx1)/2} y={belY+26} textAnchor="middle" fill={C.green} fontSize="12" fontFamily="JetBrains Mono" fontWeight="700">n = {row.n}</text>
+                        </g>
+                      );
+                    })()}
+                  </svg>
+                );
+              })()}
+            </div>
+            <div className="r-k4" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10}}>
+              {[{l:'ציר d',v:row.d,u:'mm',c:C.white},{l:'חריץ d2',v:row.d2,u:'mm',c:C.blue},{l:'רוחב m',v:row.m,u:'mm',c:C.red},{l:'קצה n',v:row.n,u:'mm',c:C.yellow}].map(r=>(
+                <div key={r.l} style={{background:C.surf,borderRadius:9,padding:12,textAlign:'center',border:`1px solid ${r.c}22`}}>
+                  <div style={{color:C.muted,fontSize:10,marginBottom:5}}>{r.l}</div>
+                  <div style={{fontFamily:"'Rajdhani'",color:r.c,fontSize:22,fontWeight:700}}>{r.v}</div>
+                  <div style={{color:C.muted,fontSize:10}}>{r.u}</div>
+                </div>
+              ))}
+            </div>
+          </Card>}
+          <Card style={{padding:14}}>
+            <div style={{color:C.muted,fontSize:12,lineHeight:1.7}}>
+              DIN 471 לצירים ו-DIN 472 לקדחים. רוחב m כולל טולרנס חיובי לאפשר הרכבה. מרחק n מהקצה הינו מינימלי.
+            </div>
+          </Card>
+        </div>}
+        right={<Card style={{padding:20}}>
+          <SectionLabel>קוטר D (מ"מ)</SectionLabel>
+          <Sel label="" value={dv.toString()} onChange={v=>setDv(parseInt(v))}
+            options={data.map(r=>({v:r.d.toString(),l:`Ø ${r.d} מ"מ`}))}/>
+          {!isExact&&<div style={{background:`${C.yellow}11`,border:`1px solid ${C.yellow}33`,borderRadius:8,padding:10,marginBottom:12}}>
+            <div style={{color:C.yellow,fontSize:12}}>קוטר {dv} אינו בתקן — הקרוב ביותר: {row?.d}</div>
+          </div>}
+          {row&&<div>{[{l:'קוטר חריץ d2',v:`${row.d2} mm`,c:C.blue},{l:'רוחב חריץ m',v:`${row.m} mm`,c:C.red},{l:'מרחק קצה n',v:`${row.n} mm`,c:C.yellow}].map(r=>(
+            <div key={r.l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 0',borderBottom:`1px solid ${C.border}`}}>
+              <span style={{color:C.muted,fontSize:13}}>{r.l}</span><Mono c={r.c} s={15}>{r.v}</Mono>
+            </div>
+          ))}</div>}
+        </Card>}
+      />
+    </ToolLayout>
+  );
+};
+
+// ── T13: NMRV CALCULATOR ──────────────────────────────────────
+const NMRVCalculator=({onBack})=>{
+  const [kw,setKw]=useState('0.75');const [spd,setSpd]=useState('1400');
+  const [sz,setSz]=useState('063');const [ratio,setRatio]=useState('20');
+  const calc=useMemo(()=>{
+    const eff=(NMRV_EFF[parseInt(sz)]||82)/100,i=parseFloat(ratio),n=parseFloat(spd),P=parseFloat(kw);
+    return{eff:(eff*100).toFixed(0),n_out:(n/i).toFixed(1),torque:(P*eff*i*9550/n).toFixed(1),shaft:NMRV_SHAFT[parseInt(sz)]||25};
+  },[kw,spd,sz,ratio]);
+  return(
+    <ToolLayout title="מחשבון מנוע וגיר NMRV" subtitle="חישוב מומנט ונתונים טכניים עם ויזואליזציה" onBack={onBack} accent={C.orange}>
+      <TwoCol
+        left={<div>
+          <Card style={{padding:24,marginBottom:14}}>
+            <SectionLabel>דיאגרמת מערכת</SectionLabel>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-around',padding:'12px 0',flexWrap:'wrap',gap:12}}>
+              <div style={{textAlign:'center'}}>
+                <svg viewBox="0 0 80 80" width="72" height="72">
+                  <rect x="5" y="10" width="65" height="60" rx="6" fill={`${C.blue}22`} stroke={C.blue} strokeWidth="1.5"/>
+                  <circle cx="37" cy="40" r="18" fill={C.surf} stroke={C.blue} strokeWidth="1.5"/>
+                  <circle cx="37" cy="40" r="6" fill={`${C.blue}44`} stroke={C.blue} strokeWidth="1"/>
+                  <rect x="70" y="32" width="10" height="16" rx="2" fill={`${C.blue}44`} stroke={C.blue} strokeWidth="1"/>
+                </svg>
+                <div style={{color:C.blue,fontSize:11,fontWeight:600}}>{kw} kW</div>
+                <div style={{color:C.muted,fontSize:10}}>{spd} RPM</div>
+              </div>
+              <div style={{color:C.dim,fontSize:20}}>→</div>
+              <div style={{textAlign:'center'}}>
+                <svg viewBox="0 0 80 80" width="72" height="72">
+                  <rect x="5" y="5" width="70" height="70" rx="8" fill={C.surf} stroke={C.borderBright} strokeWidth="1.5"/>
+                  {[0,45,90,135,180,225,270,315].map(a=>{const r=28,cx=40+r*Math.cos(a*Math.PI/180),cy=40+r*Math.sin(a*Math.PI/180);return<circle key={a} cx={cx} cy={cy} r="4" fill={C.card} stroke={C.borderBright} strokeWidth="1"/>;})}
+                  <circle cx="40" cy="40" r="16" fill={C.card} stroke={C.borderBright} strokeWidth="1.5"/>
+                  <rect x="36" y="60" width="8" height="18" rx="3" fill={C.orange}/>
+                </svg>
+                <div style={{color:C.white,fontSize:11,fontWeight:600}}>NMRV {sz}</div>
+                <div style={{color:C.green,fontSize:10}}>{calc.eff}% eff. | Ø{calc.shaft}</div>
+              </div>
+              <div style={{color:C.dim,fontSize:20}}>→</div>
+              <div style={{background:`${C.orange}11`,border:`1px solid ${C.orange}44`,borderRadius:14,padding:'16px 18px',textAlign:'center',boxShadow:`0 0 20px ${C.orange}22`}}>
+                <div style={{color:C.muted,fontSize:10,marginBottom:4}}>יציאה</div>
+                <div style={{fontFamily:"'Rajdhani'",color:C.orange,fontSize:40,fontWeight:700,lineHeight:1}}>{calc.torque}</div>
+                <div style={{color:C.orange,fontSize:16}}>Nm</div>
+                <div style={{color:C.muted,fontSize:11,marginTop:3}}>{calc.n_out} RPM</div>
+              </div>
+            </div>
+          </Card>
+          <div className="r-k4" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12}}>
+            {[{l:'סל"ד יציאה',v:calc.n_out,u:'RPM',c:C.blue},{l:'קוטר ציר',v:`Ø${calc.shaft}`,u:'mm',c:C.orange},{l:'מומנט',v:calc.torque,u:'Nm',c:C.orange},{l:'נצילות',v:`${calc.eff}%`,u:'',c:C.green}].map(r=>(
+              <div key={r.l} style={{background:C.card,border:`1px solid ${r.c}22`,borderRadius:12,padding:12,textAlign:'center'}}>
+                <div style={{color:C.muted,fontSize:10,marginBottom:5}}>{r.l}</div>
+                <div style={{fontFamily:"'Rajdhani'",color:r.c,fontSize:22,fontWeight:700}}>{r.v}</div>
+                <div style={{color:C.muted,fontSize:10}}>{r.u}</div>
+              </div>
+            ))}
+          </div>
+        </div>}
+        right={<Card style={{padding:20}}>
+          <SectionLabel>פרמטרים</SectionLabel>
+          <Sel label="הספק ומבנה מנוע" value={kw} onChange={setKw} options={MOTOR_KWS}/>
+          <Sel label='מהירות מנוע (סל"ד)' value={spd} onChange={setSpd} options={MOTOR_SPEEDS}/>
+          <Sel label="דגם גיר NMRV" value={sz} onChange={setSz} options={NMRV_SIZES}/>
+          <Sel label="יחס הפתחה (i)" value={ratio} onChange={setRatio} options={RATIOS}/>
+          <div style={{background:`${C.orange}11`,border:`1px solid ${C.orange}22`,borderRadius:10,padding:14,marginTop:8}}>
+            <div style={{color:C.orange,fontSize:11,fontWeight:600,marginBottom:4}}>שים לב</div>
+            <div style={{color:C.muted,fontSize:11,lineHeight:1.7}}>מומלץ לוודא מידות אוגן (B5/B14) מקטלוג היצרן.</div>
+          </div>
+        </Card>}
+      />
+    </ToolLayout>
+  );
+};
+
+// ── TOOLS REGISTRY ────────────────────────────────────────────
+const TOOLS=[
+  {id:'bearings',title:'טולרנסים למיסבים',desc:'התאמת גל ובית לפי סוג עומס וסיבוב',cat:'מיסבים',c:C.blue,comp:BearingTolerances},
+  {id:'motor',title:'הספק ובחירת מנוע',desc:'חישוב הספק נדרש ובחירת מנוע IEC',cat:'מנועים',c:C.orange,comp:MotorPower},
+  {id:'nmrv-conf',title:'NMRV Configurator',desc:'טבלת התאמת מנועי IEC לגירים חלזוניים',cat:'גירים',c:C.green,comp:NMRVConfigurator},
+  {id:'worm',title:'תכנון גיר חלזוני',desc:'חישוב מומנט ונצילות גיר NMRV',cat:'גירים',c:C.blue,comp:WormGearDesign},
+  {id:'pulley',title:'יחסי פולי',desc:'חישוב יחסי העברה ושילובי גלגלי שיניים',cat:'הנעה',c:C.yellow,comp:PulleyRatios},
+  {id:'nmrv-sys',title:'מערכת NMRV',desc:'התאמת מנוע וגיר לפי יישום',cat:'גירים',c:C.green,comp:NMRVSystem},
+  {id:'film',title:'משקל גליל פילם',desc:'חישוב משקל ואורך גליל יריעה פלסטיק',cat:'ייצור',c:C.yellow,comp:FilmRollWeight},
+  {id:'piston',title:'כוח בוכנה',desc:'חישוב כוח פנאומטי והידראולי',cat:'פנאומטיקה',c:C.blue,comp:PistonForce},
+  {id:'guide',title:'בדיקת כליבה',desc:'ניתוח Self-Locking במדריך ליניארי',cat:'מכניקה',c:C.red,comp:LinearGuide},
+  {id:'keyway',title:'התאמת שגם',desc:'מידות שגם לפי DIN 6885-1',cat:'חיבורים',c:C.orange,comp:KeywayDesign},
+  {id:'fitadv',title:'בחירת אפיציות',desc:'FitAdvisor — Clearance / Transition / Interference',cat:'חיבורים',c:C.green,comp:FitAdvisor},
+  {id:'snapring',title:'חריצים לסנפרינג',desc:'מידות DIN 471/472 לסנפרינג',cat:'חיבורים',c:C.blue,comp:SnapRing},
+  {id:'nmrv-calc',title:'מחשבון NMRV',desc:'חישוב מומנט וגיר עם ויזואליזציה',cat:'גירים',c:C.orange,comp:NMRVCalculator},
+];
+const CAT_C={'מיסבים':C.blue,'מנועים':C.orange,'גירים':C.green,'הנעה':C.yellow,'ייצור':C.yellow,'פנאומטיקה':C.blue,'מכניקה':C.red,'חיבורים':C.orange};
+
+// ── TOOL CARD ─────────────────────────────────────────────────
+const ToolCard=({tool,onClick})=>{
+  const [hov,setHov]=useState(false);
+  return(
+    <div className="tool-card" onClick={onClick}
+      onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+      style={{background:hov?C.cardH:C.card,borderRadius:16,padding:22,cursor:'pointer',
+        border:`1px solid ${hov?tool.c+'66':C.border}`,
+        boxShadow:hov?`0 8px 28px ${tool.c}22`:`0 2px 8px ${C.bg}`,
+        transform:hov?'translateY(-4px)':'translateY(0)',
+        transition:'all .25s cubic-bezier(.4,0,.2,1)',
+        position:'relative',overflow:'hidden',minHeight:44}}>
+      <div style={{position:'absolute',top:0,left:0,right:0,height:3,
+        background:hov?`linear-gradient(90deg,${tool.c},${tool.c}88,transparent)`:`${tool.c}44`,
+        transition:'background .25s'}}/>
+      <div style={{position:'absolute',bottom:-8,left:-8,fontSize:72,opacity:.03,
+        fontFamily:"'Rajdhani'",fontWeight:900,color:C.white,userSelect:'none',lineHeight:1}}>
+        {tool.id.slice(0,2).toUpperCase()}
+      </div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12,position:'relative'}}>
+        <div style={{background:`${tool.c}22`,border:`1px solid ${tool.c}44`,borderRadius:6,
+          padding:'3px 9px',display:'flex',alignItems:'center',gap:5}}>
+          <div style={{width:5,height:5,borderRadius:'50%',background:tool.c,flexShrink:0}}/>
+          <span style={{color:tool.c,fontSize:10,fontWeight:700,letterSpacing:'.08em'}}>{tool.cat}</span>
+        </div>
+        <div style={{color:hov?tool.c:C.dim,fontSize:18,transition:'all .2s',
+          transform:hov?'translateX(-4px)':'translateX(0)'}}>←</div>
+      </div>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:19,fontWeight:700,
+        color:hov?C.white:`${C.white}cc`,marginBottom:5,position:'relative',letterSpacing:'.01em',
+        overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tool.title}</div>
+      <div style={{color:C.muted,fontSize:12,lineHeight:1.55,position:'relative'}}>{tool.desc}</div>
+    </div>
+  );
+};
+
+// ── LANDING PAGE ──────────────────────────────────────────────
+const StatCount=({end,label,suffix=''})=>{
+  const [val,setVal]=useState(0);
+  useState(()=>{
+    let s=0;const t=setInterval(()=>{s=Math.min(s+end/75,end);setVal(Math.round(s));if(s>=end)clearInterval(t);},16);
+    return()=>clearInterval(t);
+  },[]);
+  return(
+    <div style={{textAlign:'center'}}>
+      <div style={{fontFamily:"'Rajdhani',sans-serif",fontSize:34,fontWeight:700,color:C.blue}}>{val}{suffix}</div>
+      <div style={{color:C.muted,fontSize:11,letterSpacing:'.04em'}}>{label}</div>
+    </div>
+  );
+};
+
+const LandingPage=({onSelect})=>{
+  const [cat,setCat]=useState('הכל');
+  const cats=['הכל',...new Set(TOOLS.map(t=>t.cat))];
+  const filtered=cat==='הכל'?TOOLS:TOOLS.filter(t=>t.cat===cat);
+  return(
+    <div style={{minHeight:'100vh',background:C.bg,color:C.white,direction:'rtl',
+      fontFamily:"'Barlow',sans-serif",animation:'fadeIn .4s ease'}}>
+
+      {/* HERO */}
+      <div className="r-hero" style={{position:'relative',padding:'60px 44px 52px',
+        overflow:'hidden',borderBottom:`1px solid ${C.border}`,
+        background:`linear-gradient(180deg,${C.surf} 0%,${C.bg} 100%)`}}>
+        <div style={{position:'absolute',inset:0,pointerEvents:'none'}}>
+          <div style={{position:'absolute',inset:'-40px',
+            backgroundImage:`linear-gradient(${C.blue}18 1px,transparent 1px),linear-gradient(90deg,${C.blue}18 1px,transparent 1px)`,
+            backgroundSize:'40px 40px',animation:'gridScroll 3s linear infinite',opacity:.4}}/>
+          <div style={{position:'absolute',top:'50%',right:'25%',width:360,height:360,
+            background:`radial-gradient(ellipse,${C.blue}10 0%,transparent 70%)`,
+            transform:'translate(50%,-50%)'}}/>
+        </div>
+        <svg style={{position:'absolute',right:40,top:'50%',transform:'translateY(-50%)',
+          opacity:.05,pointerEvents:'none',display:'block'}}
+          viewBox="0 0 280 280" width="240" height="240">
+          <circle cx="140" cy="140" r="110" fill="none" stroke={C.blue} strokeWidth="1"/>
+          <circle cx="140" cy="140" r="72" fill="none" stroke={C.blue} strokeWidth=".5" strokeDasharray="8 4"/>
+          <circle cx="140" cy="140" r="36" fill="none" stroke={C.blue} strokeWidth="1"/>
+          {[0,30,60,90,120,150,180,210,240,270,300,330].map(a=>(
+            <line key={a} x1={140+36*Math.cos(a*Math.PI/180)} y1={140+36*Math.sin(a*Math.PI/180)}
+              x2={140+110*Math.cos(a*Math.PI/180)} y2={140+110*Math.sin(a*Math.PI/180)}
+              stroke={C.blue} strokeWidth=".5"/>
+          ))}
+          <line x1="30" y1="140" x2="250" y2="140" stroke={C.blue} strokeWidth=".5" strokeDasharray="4 4"/>
+          <line x1="140" y1="30" x2="140" y2="250" stroke={C.blue} strokeWidth=".5" strokeDasharray="4 4"/>
+        </svg>
+
+        <div style={{position:'relative',zIndex:1,maxWidth:900,margin:'0 auto'}}>
+          <div className="r-hero-title" style={{display:'flex',alignItems:'flex-start',gap:16,marginBottom:14}}>
+            <div className="r-hero-bar" style={{width:5,height:68,background:`linear-gradient(180deg,${C.orange},${C.blue})`,borderRadius:3,flexShrink:0,marginTop:4}}/>
+            <div>
+              <div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:'.2em',
+                textTransform:'uppercase',marginBottom:6}}>מחלקת הנדסת מכונות — Engineering Tools Suite</div>
+              <h1 className="r-h1" style={{fontFamily:"'Rajdhani',sans-serif",fontSize:60,fontWeight:700,
+                lineHeight:1,letterSpacing:'.01em',
+                background:`linear-gradient(135deg,${C.white} 0%,${C.blue} 100%)`,
+                WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+                כלי הנדסה
+              </h1>
+            </div>
+          </div>
+          <p style={{color:C.muted,fontSize:15,maxWidth:500,lineHeight:1.75,marginBottom:28}}>
+            חבילת הכלים המקצועית של המחלקה — מחשבונים הנדסיים, טבלאות תקן ISO/DIN וכלי עבודה יומיומיים, במקום אחד.
+          </p>
+          <div className="r-stat" style={{display:'flex',gap:32,alignItems:'center',
+            padding:'18px 26px',background:C.card,borderRadius:12,border:`1px solid ${C.border}`,
+            boxShadow:`inset 0 1px 0 ${C.borderB}22`,width:'fit-content'}}>
+            <StatCount end={13} label="כלים פעילים"/>
+            <div className="r-stat-div" style={{width:1,height:34,background:C.border}}/>
+            <div style={{textAlign:'center'}}>
+              <div style={{fontFamily:"'Rajdhani'",fontSize:34,fontWeight:700,color:C.orange}}>ISO/DIN</div>
+              <div style={{color:C.muted,fontSize:11}}>תקנים בינלאומיים</div>
+            </div>
+            <div className="r-stat-div" style={{width:1,height:34,background:C.border}}/>
+            <div style={{textAlign:'center'}}>
+              <div style={{fontFamily:"'Rajdhani'",fontSize:34,fontWeight:700,color:C.green}}>∞</div>
+              <div style={{color:C.muted,fontSize:11}}>שימוש חינם</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter */}
+      <div className="r-filter" style={{padding:'20px 44px 0',maxWidth:1120,margin:'0 auto'}}>
+        <div style={{display:'flex',gap:7,flexWrap:'wrap',alignItems:'center'}}>
+          <span style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:'.12em',marginLeft:6}}>FILTER:</span>
+          {cats.map(c=>{
+            const ac=CAT_C[c]||C.blue,active=cat===c;
+            return(
+              <button key={c} onClick={()=>setCat(c)} style={{
+                padding:'7px 14px',borderRadius:8,cursor:'pointer',fontSize:12,fontWeight:600,
+                fontFamily:"'Barlow',sans-serif",transition:'all .2s',minHeight:36,
+                background:active?`${ac}22`:C.card,border:`1px solid ${active?ac:C.border}`,
+                color:active?ac:C.muted,boxShadow:active?`0 0 8px ${ac}22`:undefined}}>
+                {active&&<span style={{marginLeft:3}}>●</span>} {c}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div className="r-tool-grid" style={{padding:'20px 44px 56px',maxWidth:1120,margin:'0 auto',
+        display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14}}>
+        {filtered.map(t=><ToolCard key={t.id} tool={t} onClick={()=>onSelect(t.id)}/>)}
+      </div>
+
+      <div style={{borderTop:`1px solid ${C.border}`,padding:'14px 44px',
+        display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
+        <div style={{color:C.dim,fontSize:12}}>כלי עזר פנימיים — מחלקת הנדסת מכונות</div>
+        <div style={{display:'flex',gap:10}}>
+          {[C.blue,C.orange,C.green].map((c,i)=><div key={i} style={{width:5,height:5,borderRadius:'50%',background:c,opacity:.5}}/>)}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── APP ───────────────────────────────────────────────────────
+function App(){
+  const [active,setActive]=useState(null);
+  const map=Object.fromEntries(TOOLS.map(t=>[t.id,t.comp]));
+  const Comp=active?map[active]:null;
+  return(
+    <>
+      <style>{CSS}</style>
+      {Comp?<Comp onBack={()=>setActive(null)}/>:<LandingPage onSelect={setActive}/>}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+  </script>
+</body>
+</html>
