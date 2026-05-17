@@ -64,6 +64,8 @@ const CSS = `
   @keyframes borderDraw{from{stroke-dashoffset:800}to{stroke-dashoffset:0}}
   @keyframes pulseNode{0%,100%{r:3;opacity:0.5}50%{r:5;opacity:1}}
   @keyframes pistonStroke{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @keyframes pistonPush{0%,100%{transform:translateX(0)}50%{transform:translateX(12px)}}
+  @keyframes pistonPull{0%,100%{transform:translateX(0)}50%{transform:translateX(-12px)}}
   @keyframes airPulse{0%,100%{opacity:0.18;r:4}50%{opacity:0.55;r:6}}
   @keyframes resultPulse{0%{box-shadow:inset 0 1px 0 rgba(74,158,255,0.13),0 0 0 rgba(74,158,255,0);}
     40%{box-shadow:inset 0 1px 0 rgba(74,158,255,0.2),0 0 22px rgba(74,158,255,0.35);}
@@ -124,7 +126,7 @@ const CSS = `
     .r-hero-title{gap:10px!important;}
     .r-hero-bar{height:48px!important;}
     .title-block{display:none!important;}
-    .bg-gears{opacity:0.03!important;}
+    .bg-gears{opacity:0.1!important;}
   }
   @media(max-width:480px){
     .r-tool-grid{grid-template-columns:1fr!important;}
@@ -1253,13 +1255,40 @@ const PistonForce = ({onBack}) => {
           <Card style={{padding:22,marginBottom:14}}>
             <SectionLabel>סכמה מכנית</SectionLabel>
             <svg viewBox="0 0 380 120" width="100%" style={{display:'block',background:C.bg,borderRadius:10}}>
+              {/* Cylinder body */}
               <rect x="25" y="22" width="200" height="76" rx="4" fill={C.card} stroke={C.borderBright} strokeWidth="1.5"/>
-              <rect x={mode==='push'?26:140} y="23" width={mode==='push'?115:84} height="74" fill={`${C.blue}15`} rx="3"/>
+              {/* Air pressure fill */}
+              <rect x={mode==='push'?26:140} y="23" width={mode==='push'?115:84} height="74" fill={`${C.blue}20`} rx="3"/>
+              {/* Air bubbles / pressure dots */}
+              {mode==='push' ? [40,60,80,100].map(x=>(
+                <circle key={x} cx={x} cy={60} r="3" fill={C.cyan} opacity="0.35"
+                  style={{animation:`airPulse ${1.2+x*0.02}s ease-in-out infinite`,animationDelay:`${x*0.08}s`}}/>
+              )) : [155,175,195,215].map(x=>(
+                <circle key={x} cx={x} cy={60} r="3" fill={C.cyan} opacity="0.35"
+                  style={{animation:`airPulse ${1.2+x*0.01}s ease-in-out infinite`,animationDelay:`${x*0.05}s`}}/>
+              ))}
+              {/* Piston head */}
               <rect x={mode==='push'?138:76} y="18" width="6" height="84" fill={C.blue} rx="2"/>
               <rect x={mode==='push'?144:82} y="18" width="4" height="84" fill={`${C.blue}66`} rx="2"/>
-              <rect x={mode==='push'?225:82} y="51" width="80" height="18" rx="3" fill={C.surf} stroke={C.borderBright} strokeWidth="1.2"/>
-              <polygon points={mode==='push'?'310,51 330,60 310,69':'55,51 35,60 55,69'} fill={C.orange}/>
-              <text x={mode==='push'?80:170} y="64" fill={`${C.blue}88`} fontSize="9" fontFamily="Share Tech Mono">{P} BAR</text>
+              {/* Piston rod */}
+              <rect x={mode==='push'?148:86} y="51" width="76" height="18" rx="3" fill={C.surf} stroke={C.borderBright} strokeWidth="1.2"/>
+              {/* Animated force arrow */}
+              <g style={{animation: mode==='push'?'pistonPush 1.4s ease-in-out infinite':'pistonPull 1.4s ease-in-out infinite'}}>
+                <line x1={mode==='push'?298:57} y1="60"
+                      x2={mode==='push'?325:30} y2="60"
+                      stroke={C.orange} strokeWidth="3" strokeLinecap="round"/>
+                <polygon points={mode==='push'?'325,51 345,60 325,69':'35,51 15,60 35,69'} fill={C.orange}/>
+              </g>
+              {/* Motion trail lines */}
+              {[0.15,0.3,0.45].map((op,i)=>(
+                <line key={i}
+                  x1={mode==='push'?278-i*12:77+i*12} y1={50+i*4}
+                  x2={mode==='push'?278-i*12:77+i*12} y2={70-i*4}
+                  stroke={C.orange} strokeWidth="1" opacity={op}/>
+              ))}
+              {/* Pressure label */}
+              <text x={mode==='push'?75:170} y="64" fill={`${C.cyan}99`} fontSize="9" fontFamily="Share Tech Mono">{P} BAR</text>
+              {/* Dimension line */}
               <line x1="20" y1="22" x2="20" y2="98" stroke={C.muted} strokeWidth=".8" strokeDasharray="3 2"/>
               <text x="8" y="64" fill={C.muted} fontSize="8" transform="rotate(-90,8,64)">d={d}</text>
             </svg>
@@ -1999,10 +2028,10 @@ const ParticleCanvas = () => {
     const resize = ()=>{ cv.width=cv.offsetWidth; cv.height=cv.offsetHeight; };
     resize();
     window.addEventListener('resize',resize);
-    const pts = Array.from({length:32},()=>({
+    const pts = Array.from({length:38},()=>({
       x:Math.random()*cv.width, y:Math.random()*cv.height,
-      vx:(Math.random()-.5)*0.28, vy:(Math.random()-.5)*0.28,
-      r:Math.random()*1.4+0.4, op:Math.random()*0.35+0.08,
+      vx:(Math.random()-.5)*0.32, vy:(Math.random()-.5)*0.32,
+      r:Math.random()*2.2+0.8, op:Math.random()*0.55+0.2,
     }));
     let raf;
     const draw=()=>{
@@ -2016,8 +2045,8 @@ const ParticleCanvas = () => {
       });
       for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
         const d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);
-        if(d<90){ ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y);
-          ctx.strokeStyle=`rgba(74,158,255,${0.07*(1-d/90)})`; ctx.lineWidth=0.5; ctx.stroke(); }
+        if(d<110){ ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y);
+          ctx.strokeStyle=`rgba(74,158,255,${0.18*(1-d/110)})`; ctx.lineWidth=0.8; ctx.stroke(); }
       }
       raf=requestAnimationFrame(draw);
     };
@@ -2058,7 +2087,7 @@ const LandingPage = ({onSelect}) => {
         <ParticleCanvas/>
 
         {/* Background gears */}
-        <div className="bg-gears" style={{position:'absolute',inset:0,pointerEvents:'none',opacity:.06}}>
+        <div className="bg-gears" style={{position:'absolute',inset:0,pointerEvents:'none',opacity:.22}}>
           <div style={{position:'absolute',right:'6%',top:'50%',transform:'translateY(-50%)'}}>
             <svg viewBox="0 0 320 320" width="300" height="300" style={{display:'block'}}>
               <g style={{transformOrigin:'160px 160px',animation:'rotateGear 90s linear infinite'}}>
