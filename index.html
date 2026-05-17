@@ -28,7 +28,7 @@ const { useState, useMemo, useEffect, useRef } = React;
 
 // ── CSS ───────────────────────────────────────────────────────
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Barlow:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;0,500;0,700;0,900;1,400&family=Share+Tech+Mono&family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Barlow:wght@300;400;500;600&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#030D1A}
   ::-webkit-scrollbar-thumb{background:#1A5080;border-radius:3px}
@@ -63,6 +63,12 @@ const CSS = `
   }
   @keyframes borderDraw{from{stroke-dashoffset:800}to{stroke-dashoffset:0}}
   @keyframes pulseNode{0%,100%{r:3;opacity:0.5}50%{r:5;opacity:1}}
+  @keyframes pistonStroke{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @keyframes airPulse{0%,100%{opacity:0.18;r:4}50%{opacity:0.55;r:6}}
+  @keyframes resultPulse{0%{box-shadow:inset 0 1px 0 rgba(74,158,255,0.13),0 0 0 rgba(74,158,255,0);}
+    40%{box-shadow:inset 0 1px 0 rgba(74,158,255,0.2),0 0 22px rgba(74,158,255,0.35);}
+    100%{box-shadow:inset 0 1px 0 rgba(74,158,255,0.13),0 0 0 rgba(74,158,255,0);}}
+  .res-pulse{animation:resultPulse .6s ease-out;}
 
   .tool-card{animation:fadeInUp .5s cubic-bezier(.2,.8,.3,1) both;}
   .tool-card:nth-child(1){animation-delay:.05s}.tool-card:nth-child(2){animation-delay:.1s}
@@ -188,17 +194,38 @@ const AnimatedNumber = ({value, color, size=44}) => {
 const ToolIcon = ({id, c, size=72}) => {
   const h = size/2;
   const sw = 1.5;
+  const gid = `g-${id}-${size}`;
   const icons = {
     bearings:(
       <g>
-        <circle cx={h} cy={h} r={h*0.88} fill={`${c}0a`} stroke={c} strokeWidth={sw*1.8}/>
-        <circle cx={h} cy={h} r={h*0.73} fill="none" stroke={c} strokeWidth={sw*0.4} strokeDasharray="4 3" opacity="0.5"/>
+        <defs>
+          <radialGradient id={`rb-${gid}`} cx="38%" cy="30%" r="65%">
+            <stop offset="0%" stopColor={c} stopOpacity="0.55"/>
+            <stop offset="100%" stopColor={c} stopOpacity="0.04"/>
+          </radialGradient>
+          <radialGradient id={`rbi-${gid}`} cx="40%" cy="32%" r="60%">
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.18"/>
+            <stop offset="100%" stopColor={c} stopOpacity="0.04"/>
+          </radialGradient>
+        </defs>
+        {/* Outer ring - metallic */}
+        <circle cx={h} cy={h} r={h*0.88} fill={`url(#rb-${gid})`} stroke={c} strokeWidth={sw*1.8}/>
+        <circle cx={h} cy={h} r={h*0.88} fill="none" stroke="#ffffff" strokeWidth={sw*0.4} opacity="0.12"/>
+        {/* Race groove */}
+        <circle cx={h} cy={h} r={h*0.73} fill="none" stroke={c} strokeWidth={sw*0.4} strokeDasharray="4 3" opacity="0.4"/>
+        {/* Balls with highlight */}
         {[0,45,90,135,180,225,270,315].map(a=>(
-          <circle key={a} cx={h+h*0.79*Math.cos(a*Math.PI/180)} cy={h+h*0.79*Math.sin(a*Math.PI/180)}
-            r={h*0.1} fill={`${c}55`} stroke={c} strokeWidth={sw*0.9}/>
+          <g key={a}>
+            <circle cx={h+h*0.79*Math.cos(a*Math.PI/180)} cy={h+h*0.79*Math.sin(a*Math.PI/180)}
+              r={h*0.1} fill={`${c}55`} stroke={c} strokeWidth={sw*0.9}/>
+            <circle cx={h+h*0.77*Math.cos(a*Math.PI/180)-h*0.03} cy={h+h*0.77*Math.sin(a*Math.PI/180)-h*0.03}
+              r={h*0.03} fill="#ffffff" opacity="0.45"/>
+          </g>
         ))}
-        <circle cx={h} cy={h} r={h*0.52} fill={`${c}08`} stroke={c} strokeWidth={sw*1.8}/>
+        {/* Inner ring */}
+        <circle cx={h} cy={h} r={h*0.52} fill={`url(#rbi-${gid})`} stroke={c} strokeWidth={sw*1.8}/>
         <circle cx={h} cy={h} r={h*0.26} fill={`${c}22`} stroke={c} strokeWidth={sw}/>
+        {/* Dimension lines */}
         <line x1={h} y1={h*0.18} x2={h} y2={h*0.35} stroke={c} strokeWidth={sw*0.6} opacity="0.4"/>
         <line x1={h} y1={h*1.65} x2={h} y2={h*1.82} stroke={c} strokeWidth={sw*0.6} opacity="0.4"/>
         <line x1={h*0.18} y1={h} x2={h*0.35} y2={h} stroke={c} strokeWidth={sw*0.6} opacity="0.4"/>
@@ -280,15 +307,36 @@ const ToolIcon = ({id, c, size=72}) => {
     ),
     piston:(
       <g>
-        <rect x={h*0.1} y={h*0.32} width={h*1.4} height={h*1.36} rx={4} fill={`${c}0e`} stroke={c} strokeWidth={sw}/>
+        <defs>
+          <linearGradient id={`pg-${gid}`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={c} stopOpacity="0.35"/>
+            <stop offset="50%" stopColor={c} stopOpacity="0.12"/>
+            <stop offset="100%" stopColor={c} stopOpacity="0.05"/>
+          </linearGradient>
+        </defs>
+        {/* Cylinder body */}
+        <rect x={h*0.1} y={h*0.32} width={h*1.4} height={h*1.36} rx={4} fill={`url(#pg-${gid})`} stroke={c} strokeWidth={sw}/>
+        {/* Cylinder head (left/rear) */}
         <rect x={h*0.04} y={h*0.22} width={h*0.2} height={h*1.56} rx={4} fill={`${c}25`} stroke={c} strokeWidth={sw}/>
+        {/* Air intake port - BLUE highlight */}
+        <rect x={h*0.1} y={h*0.44} width={h*0.18} height={h*0.24} rx={2} fill="#4A9EFF" opacity="0.55"/>
+        <circle cx={h*0.1} cy={h*0.56} r={h*0.06}
+          fill="#00C8F0" opacity="0.7"
+          style={{animation:'airPulse 1.8s ease-in-out infinite'}}/>
+        {/* Piston body */}
         <rect x={h*0.7} y={h*0.38} width={h*0.24} height={h*1.24} rx={2} fill={`${c}38`} stroke={c} strokeWidth={sw}/>
+        {/* Piston rings */}
         {[h*0.58,h*0.84,h*1.1,h*1.36].map(y=>(
           <line key={y} x1={h*0.7} y1={y} x2={h*0.94} y2={y} stroke={c} strokeWidth={sw*0.55} opacity="0.45"/>
         ))}
-        <rect x={h*0.94} y={h*0.86} width={h*0.9} height={h*0.28} rx={2} fill={`${c}44`} stroke={c} strokeWidth={sw}/>
-        <polygon points={`${h*1.84},${h} ${h*1.96},${h*0.88} ${h*1.96},${h*1.12}`} fill={C.orange}/>
-        <rect x={h*0.1} y={h*0.38} width={h*0.6} height={h*1.24} fill={`${c}14`}/>
+        {/* Piston rod */}
+        <rect x={h*0.94} y={h*0.88} width={h*0.56} height={h*0.24} rx={2} fill={`${c}30`} stroke={c} strokeWidth={sw*0.8}/>
+        {/* Animated force arrow (orange) */}
+        <g style={{animation:'pistonStroke 1.6s ease-in-out infinite',transformOrigin:`${h*1.6}px ${h}px`}}>
+          <line x1={h*1.52} y1={h} x2={h*1.78} y2={h} stroke={C.orange} strokeWidth={sw*1.4}/>
+          <polygon points={`${h*1.78},${h*0.84} ${h*1.96},${h} ${h*1.78},${h*1.16}`} fill={C.orange}/>
+        </g>
+        {/* Pressure label */}
         <text x={h*0.4} y={h} textAnchor="middle" fill={c} fontSize={h*0.22} fontFamily="monospace" opacity="0.5">P</text>
       </g>
     ),
@@ -393,9 +441,15 @@ const Card = ({children,style={},glow,accent,className=''}) => (
   </div>
 );
 
-const ResultBig = ({label,value,unit,color=C.blue,sub}) => (
-  <div className="res-anim" style={{background:`${color}0f`,border:`1px solid ${color}33`,borderRadius:12,
-    padding:'20px 22px',marginBottom:12,boxShadow:`inset 0 1px 0 ${color}22`}}>
+const ResultBig = ({label,value,unit,color=C.blue,sub}) => {
+  const [pulse,setPulse] = useState(false);
+  const prev = useRef(value);
+  useEffect(()=>{
+    if(prev.current !== value){ prev.current=value; setPulse(true); const t=setTimeout(()=>setPulse(false),620); return()=>clearTimeout(t); }
+  },[value]);
+  return(
+  <div className={`res-anim${pulse?' res-pulse':''}`} style={{background:`${color}0f`,border:`1px solid ${color}${pulse?'77':'33'}`,borderRadius:12,
+    padding:'20px 22px',marginBottom:12,boxShadow:`inset 0 1px 0 ${color}22`,transition:'border .25s'}}>
     <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:'.12em',marginBottom:6,fontFamily:"'Barlow Condensed'"}}>{label}</div>
     <div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap'}}>
       <AnimatedNumber value={String(value)} color={color} size={44}/>
@@ -403,7 +457,7 @@ const ResultBig = ({label,value,unit,color=C.blue,sub}) => (
     </div>
     {sub&&<div style={{color:C.muted,fontSize:11,marginTop:4}}>{sub}</div>}
   </div>
-);
+);};
 
 const ResultSm = ({label,value,unit,color=C.blue}) => (
   <div className="res-anim" style={{background:`${color}0a`,border:`1px solid ${color}22`,borderRadius:10,padding:'12px 14px'}}>
@@ -625,7 +679,7 @@ const BearingTolerances = ({onBack}) => {
             <div style={{position:'absolute',top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${C.orange},${C.blue})`}}/>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16,flexWrap:'wrap',gap:8}}>
               <div>
-                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:24,fontWeight:700,color:C.orange}}>{c.title}</div>
+                <div style={{fontFamily:"'Exo 2',sans-serif",fontSize:24,fontWeight:700,color:C.orange}}>{c.title}</div>
                 <div style={{color:C.muted,fontSize:12}}>{c.sub}</div>
               </div>
               <div style={{display:'flex',flexDirection:'column',gap:5}}>
@@ -778,7 +832,7 @@ const MotorPower = ({onBack}) => {
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16,flexWrap:'wrap',gap:10}}>
               <div>
                 <div style={{color:C.muted,fontSize:11,marginBottom:4,fontFamily:"'Barlow Condensed'"}}>מנוע מומלץ (IEC)</div>
-                <div style={{fontFamily:"'Orbitron',sans-serif",color:C.green,fontSize:46,fontWeight:700,lineHeight:1}}>{calc.motor.kw}</div>
+                <div style={{fontFamily:"'Exo 2',sans-serif",color:C.green,fontSize:46,fontWeight:700,lineHeight:1}}>{calc.motor.kw}</div>
                 <div style={{color:C.green,fontSize:18,fontFamily:"'Share Tech Mono'"}}>kW — Frame {calc.motor.fr}</div>
               </div>
               <div style={{background:`${C.green}22`,border:`1px solid ${C.green}44`,borderRadius:'50%',
@@ -1286,7 +1340,7 @@ const LinearGuide = ({onBack}) => {
           <div style={{background:`${ac}0f`,border:`1px solid ${ac}44`,borderRadius:14,padding:'16px 20px',marginBottom:16,display:'flex',alignItems:'center',gap:14,boxShadow:`0 0 24px ${ac}22`,flexWrap:'wrap'}}>
             <div style={{width:44,height:44,borderRadius:'50%',background:`${ac}22`,border:`2px solid ${ac}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,color:ac,flexShrink:0}}>{calc.safe?'✓':'✗'}</div>
             <div>
-              <div style={{fontFamily:"'Orbitron',sans-serif",color:ac,fontSize:18,fontWeight:700}}>{calc.safe?'מערכת בטוחה':'⚠ סכנת כליבה (Binding)'}</div>
+              <div style={{fontFamily:"'Exo 2',sans-serif",color:ac,fontSize:18,fontWeight:700}}>{calc.safe?'מערכת בטוחה':'⚠ סכנת כליבה (Binding)'}</div>
               <div style={{color:C.muted,fontSize:12,marginTop:2}}>SF={calc.SF} — {calc.safe?'מעל סף המינימום (1.3)':'נמוך מ-1.3. כוח הדחיפה גדול מכוח החיכוך.'}</div>
             </div>
           </div>
@@ -1318,7 +1372,7 @@ const LinearGuide = ({onBack}) => {
             <div className="r-notes" style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10}}>
               {[{s:'μ',t:'הקטן מקדם חיכוך — מתחת ל-0.175'},{s:'H',t:'הגדל אורך מחליק — מינימום 151 מ"מ'},{s:'b',t:'הקטן זרוע כוח — מקסימום 93 מ"מ'}].map(a=>(
                 <div key={a.s} style={{background:C.surf,borderRadius:8,padding:12}}>
-                  <div style={{fontFamily:"'Orbitron'",color:C.blue,fontSize:22,fontWeight:700,marginBottom:4}}>{a.s}</div>
+                  <div style={{fontFamily:"'Exo 2'",color:C.blue,fontSize:22,fontWeight:700,marginBottom:4}}>{a.s}</div>
                   <div style={{color:C.muted,fontSize:11,lineHeight:1.6}}>{a.t}</div>
                 </div>
               ))}
@@ -1484,7 +1538,7 @@ const KeywayDesign = ({onBack}) => {
             {[{l:'גובה שגם H',v:kw.h,c:C.white},{l:'רוחב שגם B',v:kw.b,c:C.white},{l:'עומק נבור T2',v:kw.t2,c:C.orange},{l:'עומק ציר T1',v:kw.t1,c:C.blue}].map(r=>(
               <div key={r.l} style={{background:C.bg,border:`1px solid ${r.c}22`,borderRadius:10,padding:12,textAlign:'center'}}>
                 <div style={{color:C.muted,fontSize:10,marginBottom:5,fontFamily:"'Barlow Condensed'"}}>{r.l}</div>
-                <div style={{fontFamily:"'Orbitron'",color:r.c,fontSize:24,fontWeight:700}}>{r.v}</div>
+                <div style={{fontFamily:"'Exo 2'",color:r.c,fontSize:24,fontWeight:700}}>{r.v}</div>
               </div>
             ))}
           </div>
@@ -1855,17 +1909,30 @@ const CAT_C={'מיסבים':C.blue,'מנועים':C.orange,'גירים':C.green,
 // ── TOOL CARD ─────────────────────────────────────────────────
 const ToolCard = ({tool,onClick}) => {
   const [hov,setHov] = useState(false);
+  const [tilt,setTilt] = useState({x:0,y:0});
+  const cardRef = useRef(null);
+  const handleMove = (e) => {
+    if(!cardRef.current) return;
+    const r = cardRef.current.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    setTilt({x: y*9, y: -x*9});
+  };
+  const handleLeave = () => { setHov(false); setTilt({x:0,y:0}); };
   return(
-    <div className="tool-card" onClick={onClick}
-      onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+    <div ref={cardRef} className="tool-card" onClick={onClick}
+      onMouseEnter={()=>setHov(true)} onMouseLeave={handleLeave} onMouseMove={handleMove}
       style={{
         background: hov ? C.cardH : C.card,
         borderRadius:16, padding:'20px 20px 18px', cursor:'pointer',
         border:`1px solid ${hov ? tool.c+'55' : C.border}`,
-        boxShadow: hov ? `0 10px 36px ${tool.c}28, inset 0 1px 0 ${tool.c}22` : `0 2px 8px ${C.bg}`,
-        transform: hov ? 'translateY(-5px)' : 'translateY(0)',
-        transition:'all .3s cubic-bezier(.2,.8,.3,1)',
+        boxShadow: hov ? `0 14px 42px ${tool.c}30, inset 0 1px 0 ${tool.c}22` : `0 2px 8px ${C.bg}`,
+        transform: hov
+          ? `perspective(700px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) translateY(-5px)`
+          : 'perspective(700px) rotateX(0) rotateY(0) translateY(0)',
+        transition: hov ? 'box-shadow .2s,border .2s,background .2s' : 'all .4s cubic-bezier(.2,.8,.3,1)',
         position:'relative', overflow:'hidden', minHeight:44,
+        willChange:'transform',
       }}>
 
       {/* Blueprint corner marks */}
@@ -1883,7 +1950,7 @@ const ToolCard = ({tool,onClick}) => {
 
       {/* Faint category watermark */}
       <div style={{position:'absolute',bottom:-4,left:-4,fontSize:64,opacity:.03,
-        fontFamily:"'Orbitron',sans-serif",fontWeight:900,color:C.white,userSelect:'none',lineHeight:1}}>
+        fontFamily:"'Exo 2',sans-serif",fontWeight:900,color:C.white,userSelect:'none',lineHeight:1}}>
         {tool.id.slice(0,2).toUpperCase()}
       </div>
 
@@ -1916,11 +1983,48 @@ const ToolCard = ({tool,onClick}) => {
       </div>
 
       {/* Description */}
-      <div style={{color:C.muted,fontSize:12,lineHeight:1.5,position:'relative'}}>
+      <div style={{color:C.muted,fontSize:13,lineHeight:1.5,position:'relative'}}>
         {tool.desc}
       </div>
     </div>
   );
+};
+
+// ── PARTICLE CANVAS ───────────────────────────────────────────
+const ParticleCanvas = () => {
+  const ref = useRef(null);
+  useEffect(()=>{
+    const cv = ref.current; if(!cv) return;
+    const ctx = cv.getContext('2d');
+    const resize = ()=>{ cv.width=cv.offsetWidth; cv.height=cv.offsetHeight; };
+    resize();
+    window.addEventListener('resize',resize);
+    const pts = Array.from({length:32},()=>({
+      x:Math.random()*cv.width, y:Math.random()*cv.height,
+      vx:(Math.random()-.5)*0.28, vy:(Math.random()-.5)*0.28,
+      r:Math.random()*1.4+0.4, op:Math.random()*0.35+0.08,
+    }));
+    let raf;
+    const draw=()=>{
+      ctx.clearRect(0,0,cv.width,cv.height);
+      pts.forEach(p=>{
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.x<0)p.x=cv.width; if(p.x>cv.width)p.x=0;
+        if(p.y<0)p.y=cv.height; if(p.y>cv.height)p.y=0;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(74,158,255,${p.op})`; ctx.fill();
+      });
+      for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+        const d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);
+        if(d<90){ ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y);
+          ctx.strokeStyle=`rgba(74,158,255,${0.07*(1-d/90)})`; ctx.lineWidth=0.5; ctx.stroke(); }
+      }
+      raf=requestAnimationFrame(draw);
+    };
+    draw();
+    return()=>{ cancelAnimationFrame(raf); window.removeEventListener('resize',resize); };
+  },[]);
+  return <canvas ref={ref} style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:0}}/>;
 };
 
 // ── LANDING PAGE ──────────────────────────────────────────────
@@ -1932,7 +2036,7 @@ const StatCount = ({end,label,suffix=''}) => {
   },[]);
   return(
     <div style={{textAlign:'center'}}>
-      <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:30,fontWeight:700,color:C.blue}}>{val}{suffix}</div>
+      <div style={{fontFamily:"'Exo 2',sans-serif",fontSize:30,fontWeight:700,color:C.blue}}>{val}{suffix}</div>
       <div style={{color:C.muted,fontSize:11,letterSpacing:'.04em',fontFamily:"'Barlow Condensed'"}}>{label}</div>
     </div>
   );
@@ -1949,6 +2053,9 @@ const LandingPage = ({onSelect}) => {
       <div className="r-hero" style={{position:'relative',padding:'56px 44px 0',
         overflow:'hidden',borderBottom:`1px solid ${C.border}`,
         background:`linear-gradient(180deg,${C.surf}cc 0%,${C.bg}00 100%)`}}>
+
+        {/* Particle field */}
+        <ParticleCanvas/>
 
         {/* Background gears */}
         <div className="bg-gears" style={{position:'absolute',inset:0,pointerEvents:'none',opacity:.06}}>
@@ -2008,7 +2115,7 @@ const LandingPage = ({onSelect}) => {
           </div>
           <div className="hero-reveal" style={{display:'flex',alignItems:'flex-start',gap:16,marginBottom:16}} >
             <div className="r-hero-bar" style={{width:4,height:64,background:`linear-gradient(180deg,${C.orange},${C.blue})`,borderRadius:2,flexShrink:0,marginTop:4}}/>
-            <h1 className="r-h1 title-glow" style={{fontFamily:"'Orbitron',sans-serif",fontSize:58,fontWeight:900,
+            <h1 className="r-h1 title-glow" style={{fontFamily:"'Exo 2',sans-serif",fontSize:58,fontWeight:900,
               lineHeight:1,letterSpacing:'.02em',
               background:`linear-gradient(135deg,${C.white} 0%,${C.blue} 60%,${C.cyan} 100%)`,
               WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
@@ -2025,12 +2132,12 @@ const LandingPage = ({onSelect}) => {
               <StatCount end={13} label="כלים פעילים"/>
               <div className="r-stat-div" style={{width:1,height:32,background:C.border}}/>
               <div style={{textAlign:'center'}}>
-                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:28,fontWeight:700,color:C.orange}}>ISO/DIN</div>
+                <div style={{fontFamily:"'Exo 2',sans-serif",fontSize:28,fontWeight:700,color:C.orange}}>ISO/DIN</div>
                 <div style={{color:C.muted,fontSize:11,fontFamily:"'Barlow Condensed'"}}>תקנים בינלאומיים</div>
               </div>
               <div className="r-stat-div" style={{width:1,height:32,background:C.border}}/>
               <div style={{textAlign:'center'}}>
-                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:28,fontWeight:700,color:C.green}}>∞</div>
+                <div style={{fontFamily:"'Exo 2',sans-serif",fontSize:28,fontWeight:700,color:C.green}}>∞</div>
                 <div style={{color:C.muted,fontSize:11,fontFamily:"'Barlow Condensed'"}}>שימוש חינם</div>
               </div>
             </div>
