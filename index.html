@@ -744,7 +744,7 @@ const InjectionClamp = ({onBack}) => {
 
   const nbtn=(val,cur,col)=>({
     padding:'8px',borderRadius:8,cursor:'pointer',fontFamily:"'Share Tech Mono',monospace",
-    fontWeight:700,fontSize:12,minHeight:38,minWidth:40,
+    fontWeight:700,fontSize:18,minHeight:38,minWidth:40,
     border:'1px solid '+(cur===val?col:C.border),
     background:cur===val?col+'22':C.surf,color:cur===val?col:C.muted,transition:'all .15s',
   });
@@ -759,7 +759,7 @@ const InjectionClamp = ({onBack}) => {
               padding:'20px 24px',marginBottom:14,position:'relative',overflow:'hidden'}}>
               <div style={{position:'absolute',inset:0,pointerEvents:'none',
                 background:'radial-gradient(ellipse at 30% 0%,'+C.orange+'10,transparent 60%)'}}/>
-              <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:'.14em',
+              <div style={{color:C.muted,fontSize:18,fontWeight:700,letterSpacing:'.14em',
                 marginBottom:10,fontFamily:"'Barlow Condensed'"}}>כוח נעילה מחושב</div>
               <div style={{display:'flex',alignItems:'baseline',gap:12,marginBottom:16,flexWrap:'wrap'}}>
                 <span style={{fontFamily:"'Share Tech Mono'",fontSize:68,fontWeight:700,color:C.orange,lineHeight:1}}>{calc.F}</span>
@@ -772,8 +772,8 @@ const InjectionClamp = ({onBack}) => {
                   {l:'חומר',v:mat.family,c:fc},
                 ].map(r=>(
                   <div key={r.l} style={{background:C.bg+'bb',borderRadius:10,padding:'10px 14px',border:'1px solid '+C.border}}>
-                    <div style={{color:C.muted,fontSize:9,marginBottom:3,fontFamily:"'Barlow Condensed'",letterSpacing:'.08em'}}>{r.l}</div>
-                    <div style={{fontFamily:"'Share Tech Mono'",color:r.c,fontSize:16,fontWeight:700}}>{r.v}</div>
+                    <div style={{color:C.muted,fontSize:15,marginBottom:3,fontFamily:"'Barlow Condensed'",letterSpacing:'.08em'}}>{r.l}</div>
+                    <div style={{fontFamily:"'Share Tech Mono'",color:r.c,fontSize:18,fontWeight:700}}>{r.v}</div>
                   </div>
                 ))}
               </div>
@@ -781,8 +781,8 @@ const InjectionClamp = ({onBack}) => {
               <SectionLabel>בחירת מכונה</SectionLabel>
               {calc.noMach?(
                 <div style={{background:C.red+'12',border:'2px solid '+C.red,borderRadius:10,padding:'12px 16px'}}>
-                  <div style={{color:C.red,fontSize:13,fontWeight:700,marginBottom:3}}>אין מכונה מתאימה בצי</div>
-                  <div style={{color:C.muted,fontSize:12}}>{'נדרש '+calc.Fround+'T — מעל JSW 850T. שנה תכן.'}</div>
+                  <div style={{color:C.red,fontSize:15,fontWeight:700,marginBottom:3}}>אין מכונה מתאימה בצי</div>
+                  <div style={{color:C.muted,fontSize:18}}>{'נדרש '+calc.Fround+'T — מעל JSW 850T. שנה תכן.'}</div>
                 </div>
               ):(
                 <div style={{display:'flex',flexDirection:'column',gap:5}}>
@@ -797,13 +797,13 @@ const InjectionClamp = ({onBack}) => {
                         <div style={{width:7,height:7,borderRadius:'50%',flexShrink:0,
                           background:isRec?C.orange:ok?C.green:C.muted}}/>
                         <div style={{flex:1}}>
-                          <div style={{fontFamily:"'Share Tech Mono'",fontSize:12,fontWeight:isRec?700:400,
-                            color:isRec?C.orange:ok?C.white:C.muted}}>{m.name}</div>
-                          {isRec&&<div style={{color:C.orange,fontSize:10}}>✓ מכונה קטנה מספיקה</div>}
+                          <div style={{fontFamily:"'Share Tech Mono'",fontSize:18,fontWeight:isRec?700:400,
+                            color:isRec?C.orange:ok?'#E0F0FF':C.muted}}>{m.name}</div>
+                          {isRec&&<div style={{color:C.orange,fontSize:18}}>✓ מכונה קטנה מספיקה</div>}
                         </div>
-                        <span style={{fontFamily:"'Share Tech Mono'",fontSize:12,
+                        <span style={{fontFamily:"'Share Tech Mono'",fontSize:18,
                           color:isRec?C.orange:ok?C.white+'88':C.muted}}>{m.tons}T</span>
-                        <span style={{fontSize:13,color:ok?(isRec?C.orange:C.green):C.red}}>
+                        <span style={{fontSize:15,color:ok?(isRec?C.orange:C.green):C.red}}>
                           {ok?'✓':'✗'}
                         </span>
                       </div>
@@ -814,7 +814,7 @@ const InjectionClamp = ({onBack}) => {
             </div>
           ):(
             <div style={{background:C.card,border:'1px solid '+C.border,borderRadius:16,
-              padding:32,textAlign:'center',marginBottom:14,color:C.muted,fontSize:14}}>
+              padding:32,textAlign:'center',marginBottom:14,color:C.muted,fontSize:18}}>
               הזן מידות מוצר לחישוב
             </div>
           )}
@@ -823,10 +823,10 @@ const InjectionClamp = ({onBack}) => {
           {calc&&(
             <Card style={{padding:'14px 18px',marginBottom:14,borderRight:'3px solid '+ltC,borderColor:ltC+'33'}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10,flexWrap:'wrap',gap:8}}>
-                <div style={{color:C.white,fontSize:13,fontWeight:600}}>יחס L/t</div>
+                <div style={{color:C.white,fontSize:15,fontWeight:600}}>יחס L/t</div>
                 <div style={{display:'flex',alignItems:'baseline',gap:5}}>
                   <span style={{fontFamily:"'Share Tech Mono'",color:ltC,fontSize:26,fontWeight:700}}>{calc.lt}</span>
-                  <span style={{color:C.muted,fontSize:11,fontFamily:"'Share Tech Mono'"}}>{'/ max '+mat.maxLt}</span>
+                  <span style={{color:C.muted,fontSize:15,fontFamily:"'Share Tech Mono'"}}>{'/ max '+mat.maxLt}</span>
                 </div>
               </div>
               <div style={{background:C.bg,borderRadius:6,height:10,overflow:'hidden',marginBottom:5}}>
@@ -836,10 +836,10 @@ const InjectionClamp = ({onBack}) => {
               </div>
               {(calc.ltD||calc.ltW)&&(
                 <div style={{background:ltC+'0f',border:'1px solid '+ltC+'33',borderRadius:8,padding:'8px 12px',marginTop:8}}>
-                  <div style={{color:ltC,fontSize:12,fontWeight:700,marginBottom:2}}>
+                  <div style={{color:ltC,fontSize:18,fontWeight:700,marginBottom:2}}>
                     {calc.ltD?'⚠ L/t חורג — סכנת Short Shot':'⚡ L/t גבוה — קרוב לגבול החומר'}
                   </div>
-                  <div style={{color:C.muted,fontSize:11}}>הוסף gates · הגדל עובי דופן · שנה לחומר עם MFI גבוה יותר</div>
+                  <div style={{color:C.muted,fontSize:15}}>הוסף gates · הגדל עובי דופן · שנה לחומר עם MFI גבוה יותר</div>
                 </div>
               )}
             </Card>
@@ -857,8 +857,8 @@ const InjectionClamp = ({onBack}) => {
                 {l:'SF',        v:'x'+mat.SF,        c:C.white},
               ].map((r,i)=>(
                 <div key={i} style={{background:C.surf,border:'1px solid '+r.c+'18',borderRadius:10,padding:'10px 8px',textAlign:'center'}}>
-                  <div style={{color:C.muted,fontSize:9,letterSpacing:'.06em',marginBottom:4,fontFamily:"'Barlow Condensed'"}}>{r.l}</div>
-                  <div style={{fontFamily:"'Share Tech Mono'",color:r.c,fontSize:14,fontWeight:700}}>{r.v}</div>
+                  <div style={{color:C.muted,fontSize:15,letterSpacing:'.06em',marginBottom:4,fontFamily:"'Barlow Condensed'"}}>{r.l}</div>
+                  <div style={{fontFamily:"'Share Tech Mono'",color:r.c,fontSize:18,fontWeight:700}}>{r.v}</div>
                 </div>
               ))}
             </div>
@@ -879,14 +879,14 @@ const InjectionClamp = ({onBack}) => {
               ].map(([k,formula,result,col],i)=>(
                 <div key={i} style={{display:'flex',alignItems:'baseline',gap:8,padding:'6px 0',
                   borderBottom:i<6?'1px solid '+C.border:undefined,flexWrap:'wrap'}}>
-                  <span style={{color:C.muted,fontSize:11,minWidth:52,flexShrink:0,fontFamily:"'Share Tech Mono'"}}>{k}</span>
-                  <span style={{color:C.dim,fontSize:11,flex:1,fontFamily:'monospace'}}>{formula}</span>
+                  <span style={{color:C.muted,fontSize:15,minWidth:52,flexShrink:0,fontFamily:"'Share Tech Mono'"}}>{k}</span>
+                  <span style={{color:C.dim,fontSize:15,flex:1,fontFamily:'monospace'}}>{formula}</span>
                   <span style={{fontFamily:"'Share Tech Mono'",whiteSpace:'nowrap',
                     color:i===6?C.orange:col,fontSize:i===6?14:12,fontWeight:i===6?700:500}}>{result}</span>
                 </div>
               ))}
               <div style={{background:C.bg,borderRadius:8,padding:'9px 12px',marginTop:10,
-                fontFamily:"'Share Tech Mono'",color:C.muted,fontSize:11}}>
+                fontFamily:"'Share Tech Mono'",color:C.muted,fontSize:15}}>
                 F = (LxW/100) x P_base x f(L/t) x n_cav x SF / 1000
               </div>
             </Card>
@@ -903,8 +903,8 @@ const InjectionClamp = ({onBack}) => {
                     <div key={i} style={{flex:1,minWidth:58,borderRadius:8,padding:'8px 6px',textAlign:'center',
                       background:active?row.color+'22':C.surf,border:'1px solid '+(active?row.color:C.border),
                       boxShadow:active?'0 0 10px '+row.color+'44':undefined}}>
-                      <div style={{color:active?row.color:C.dim,fontSize:9,fontFamily:"'Share Tech Mono'",marginBottom:3}}>{row.label}</div>
-                      <div style={{fontFamily:"'Exo 2'",fontSize:16,fontWeight:700,color:active?row.color:C.muted}}>{'x'+row.f}</div>
+                      <div style={{color:active?row.color:C.dim,fontSize:15,fontFamily:"'Share Tech Mono'",marginBottom:3}}>{row.label}</div>
+                      <div style={{fontFamily:"'Exo 2'",fontSize:18,fontWeight:700,color:active?row.color:C.muted}}>{'x'+row.f}</div>
                     </div>
                   );
                 })}
@@ -916,27 +916,27 @@ const InjectionClamp = ({onBack}) => {
           {hist.length>0&&(
             <Card style={{padding:'14px 18px',marginBottom:14}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-                <div style={{color:C.muted,fontSize:10,fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',fontFamily:"'Barlow Condensed'"}}>היסטוריית חישובים</div>
-                <button onClick={clearHist} style={{background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:11,fontFamily:"'Barlow'"}}>מחק הכל</button>
+                <div style={{color:C.muted,fontSize:18,fontWeight:700,letterSpacing:'.12em',textTransform:'uppercase',fontFamily:"'Barlow Condensed'"}}>היסטוריית חישובים</div>
+                <button onClick={clearHist} style={{background:'none',border:'none',color:C.muted,cursor:'pointer',fontSize:15,fontFamily:"'Barlow'"}}>מחק הכל</button>
               </div>
               <div style={{overflowX:'auto'}}>
-                <table style={{width:'100%',borderCollapse:'collapse',minWidth:460,fontSize:11}}>
+                <table style={{width:'100%',borderCollapse:'collapse',minWidth:460,fontSize:15}}>
                   <thead><tr style={{borderBottom:'1px solid '+C.border}}>
                     {['שם','ממדים','G/C','חומר','L/t','כוח','מכונה','שעה'].map(h=>(
-                      <th key={h} style={{padding:'4px 6px',color:C.muted,fontSize:9,fontWeight:700,letterSpacing:'.07em',textAlign:'right',fontFamily:"'Barlow Condensed'",whiteSpace:'nowrap'}}>{h}</th>
+                      <th key={h} style={{padding:'4px 6px',color:C.muted,fontSize:15,fontWeight:700,letterSpacing:'.07em',textAlign:'right',fontFamily:"'Barlow Condensed'",whiteSpace:'nowrap'}}>{h}</th>
                     ))}
                   </tr></thead>
                   <tbody>
                     {hist.map(e=>(
                       <tr key={e.id} style={{borderBottom:'1px solid '+C.border+'22'}}>
                         <td style={{padding:'5px 6px',color:C.white,fontWeight:600,whiteSpace:'nowrap'}}>{e.name}</td>
-                        <td style={{padding:'5px 6px',color:C.muted,fontFamily:"'Share Tech Mono'",fontSize:10}}>{e.dims}</td>
-                        <td style={{padding:'5px 6px',color:C.muted,fontFamily:"'Share Tech Mono'",fontSize:10}}>{e.gx}</td>
+                        <td style={{padding:'5px 6px',color:C.muted,fontFamily:"'Share Tech Mono'",fontSize:18}}>{e.dims}</td>
+                        <td style={{padding:'5px 6px',color:C.muted,fontFamily:"'Share Tech Mono'",fontSize:18}}>{e.gx}</td>
                         <td style={{padding:'5px 6px',color:C.muted,maxWidth:90,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.mat}</td>
                         <td style={{padding:'5px 6px',fontFamily:"'Share Tech Mono'",color:e.lt>200?C.red:e.lt>150?C.yellow:C.green}}>{e.lt}</td>
                         <td style={{padding:'5px 6px',fontFamily:"'Share Tech Mono'",color:C.orange,fontWeight:700}}>{e.F}T</td>
-                        <td style={{padding:'5px 6px',fontFamily:"'Share Tech Mono'",fontSize:10,color:e.mach==='אין'?C.red:C.white}}>{e.mach}</td>
-                        <td style={{padding:'5px 6px',fontFamily:"'Share Tech Mono'",fontSize:10,color:C.dim}}>{e.time}</td>
+                        <td style={{padding:'5px 6px',fontFamily:"'Share Tech Mono'",fontSize:18,color:e.mach==='אין'?C.red:C.white}}>{e.mach}</td>
+                        <td style={{padding:'5px 6px',fontFamily:"'Share Tech Mono'",fontSize:18,color:C.dim}}>{e.time}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -947,7 +947,7 @@ const InjectionClamp = ({onBack}) => {
 
           {mat.warn&&(
             <div style={{background:C.yellow+'0a',border:'1px solid '+C.yellow+'33',borderRadius:10,padding:'12px 16px',borderRight:'3px solid '+C.yellow}}>
-              <div style={{color:C.yellow,fontSize:12,lineHeight:1.7}}>{mat.warn}</div>
+              <div style={{color:C.yellow,fontSize:18,lineHeight:1.7}}>{mat.warn}</div>
             </div>
           )}
         </div>}
@@ -969,12 +969,12 @@ const InjectionClamp = ({onBack}) => {
             borderRadius:matOpen?'9px 9px 0 0':9,padding:'10px 14px',transition:'border .2s'}}>
             <div style={{display:'flex',alignItems:'center',gap:9,minWidth:0}}>
               <span style={{background:fc+'22',color:fc,border:'1px solid '+fc+'44',borderRadius:4,
-                padding:'2px 6px',fontSize:9,fontFamily:"'Share Tech Mono'",fontWeight:700,flexShrink:0}}>
+                padding:'2px 6px',fontSize:15,fontFamily:"'Share Tech Mono'",fontWeight:700,flexShrink:0}}>
                 {mat.family}
               </span>
-              <span style={{color:C.white,fontSize:12,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{mat.name}</span>
+              <span style={{color:C.white,fontSize:18,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{mat.name}</span>
             </div>
-            <span style={{color:C.muted,fontSize:10,flexShrink:0,marginRight:4}}>{matOpen?'▲':'▼'}</span>
+            <span style={{color:C.muted,fontSize:18,flexShrink:0,marginRight:4}}>{matOpen?'▲':'▼'}</span>
           </div>
 
           {/* Dropdown list */}
@@ -983,12 +983,12 @@ const InjectionClamp = ({onBack}) => {
               background:C.card,marginBottom:12,overflow:'hidden'}}>
               <div style={{display:'flex',alignItems:'center',gap:8,padding:'7px 12px',
                 borderBottom:'1px solid '+C.border,background:C.surf}}>
-                <span style={{color:C.muted,fontSize:13}}>⌕</span>
+                <span style={{color:C.muted,fontSize:15}}>⌕</span>
                 <input value={search} onChange={e=>setSearch(e.target.value)} autoFocus
                   placeholder="PP, HDPE, PC..."
                   style={{flex:1,background:'transparent',border:'none',color:C.white,
-                    fontSize:13,fontFamily:"'Barlow'",outline:'none',padding:'2px 0'}}/>
-                {search&&<button onClick={()=>setSearch('')} style={{color:C.muted,background:'none',border:'none',cursor:'pointer',fontSize:13}}>✕</button>}
+                    fontSize:15,fontFamily:"'Barlow'",outline:'none',padding:'2px 0'}}/>
+                {search&&<button onClick={()=>setSearch('')} style={{color:C.muted,background:'none',border:'none',cursor:'pointer',fontSize:15}}>✕</button>}
               </div>
               <div style={{maxHeight:200,overflowY:'auto'}}>
                 {filteredMats.map(m=>{
@@ -1002,17 +1002,17 @@ const InjectionClamp = ({onBack}) => {
                       onMouseLeave={e=>{e.currentTarget.style.background=sel?mfc+'18':'transparent';}}>
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}>
                         <div style={{minWidth:0}}>
-                          <div style={{color:sel?C.white:C.white+'bb',fontSize:12,fontWeight:sel?700:400,
+                          <div style={{color:sel?C.white:'#A0C8E8',fontSize:18,fontWeight:sel?700:400,
                             overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.name}</div>
-                          <div style={{color:C.muted,fontSize:10,marginTop:1}}>{'MFI '+m.mfi+' · '+m.P+' bar'}</div>
+                          <div style={{color:C.muted,fontSize:18,marginTop:1}}>{'MFI '+m.mfi+' · '+m.P+' bar'}</div>
                         </div>
                         <span style={{background:mfc+'22',color:mfc,border:'1px solid '+mfc+'44',borderRadius:4,
-                          padding:'2px 5px',fontSize:9,fontFamily:"'Share Tech Mono'",flexShrink:0}}>{m.family}</span>
+                          padding:'2px 5px',fontSize:15,fontFamily:"'Share Tech Mono'",flexShrink:0}}>{m.family}</span>
                       </div>
                     </div>
                   );
                 })}
-                {!filteredMats.length&&<div style={{padding:12,textAlign:'center',color:C.muted,fontSize:12}}>אין תוצאות</div>}
+                {!filteredMats.length&&<div style={{padding:12,textAlign:'center',color:C.muted,fontSize:18}}>אין תוצאות</div>}
               </div>
             </div>
           )}
@@ -1020,14 +1020,14 @@ const InjectionClamp = ({onBack}) => {
           {/* Mat info */}
           <div style={{background:C.surf,borderRadius:10,padding:'11px 13px',marginBottom:14,border:'1px solid '+fc+'33'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8,marginBottom:8}}>
-              <div style={{color:C.white,fontSize:12,fontWeight:600,lineHeight:1.3}}>{mat.name}</div>
+              <div style={{color:C.white,fontSize:18,fontWeight:600,lineHeight:1.3}}>{mat.name}</div>
               <Badge color={fc}>{mat.family}</Badge>
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
               {[{l:'צילינדר',v:mat.melt},{l:'תבנית',v:mat.mold},{l:'כיווץ',v:mat.shrink},{l:'P_base',v:mat.P+' bar'},{l:'SF',v:String(mat.SF)},{l:'Max L/t',v:String(mat.maxLt)}].map(r=>(
                 <div key={r.l} style={{background:C.bg,borderRadius:6,padding:'5px 8px'}}>
-                  <div style={{color:C.muted,fontSize:9,marginBottom:1,fontFamily:"'Barlow Condensed'"}}>{r.l}</div>
-                  <div style={{color:C.white,fontSize:10,fontFamily:"'Share Tech Mono'",fontWeight:600}}>{r.v}</div>
+                  <div style={{color:C.muted,fontSize:15,marginBottom:1,fontFamily:"'Barlow Condensed'"}}>{r.l}</div>
+                  <div style={{color:C.white,fontSize:18,fontFamily:"'Share Tech Mono'",fontWeight:600}}>{r.v}</div>
                 </div>
               ))}
             </div>
@@ -1039,7 +1039,7 @@ const InjectionClamp = ({onBack}) => {
             {[1,2,4,6,8,12,16].map(n=>(
               <button key={n} onClick={()=>setCavs(n)} style={{
                 padding:'7px 9px',borderRadius:8,cursor:'pointer',fontFamily:"'Share Tech Mono'",
-                fontWeight:700,fontSize:12,minHeight:36,minWidth:38,
+                fontWeight:700,fontSize:18,minHeight:36,minWidth:38,
                 border:'1px solid '+(cavs===n?C.orange:C.border),
                 background:cavs===n?C.orange+'22':C.surf,
                 color:cavs===n?C.orange:C.muted,transition:'all .15s'}}>{n}</button>
@@ -1047,18 +1047,18 @@ const InjectionClamp = ({onBack}) => {
             <input type="number" min="1" max="16" value={cavs}
               onChange={e=>setCavs(Math.min(16,Math.max(1,parseInt(e.target.value)||1)))}
               style={{width:46,background:C.orange+'11',border:'1px solid '+C.orange+'44',borderRadius:8,
-                color:C.orange,padding:'7px 5px',fontSize:12,fontFamily:"'Share Tech Mono'",
+                color:C.orange,padding:'7px 5px',fontSize:18,fontFamily:"'Share Tech Mono'",
                 fontWeight:700,textAlign:'center',outline:'none'}}/>
           </div>
 
           <div style={{height:1,background:C.border,margin:'14px 0'}}/>
           <SectionLabel>Gates</SectionLabel>
-          <div style={{color:C.muted,fontSize:11,marginBottom:7}}>L_flow מחולק ב- sqrt(Gates)</div>
+          <div style={{color:C.muted,fontSize:15,marginBottom:7}}>L_flow מחולק ב- sqrt(Gates)</div>
           <div style={{display:'flex',gap:6,marginBottom:6,alignItems:'center',flexWrap:'wrap'}}>
             {[1,2,3,4,6].map(n=>(
               <button key={n} onClick={()=>setGates(n)} style={{
                 padding:'7px 9px',borderRadius:8,cursor:'pointer',fontFamily:"'Share Tech Mono'",
-                fontWeight:700,fontSize:12,minHeight:36,minWidth:38,
+                fontWeight:700,fontSize:18,minHeight:36,minWidth:38,
                 border:'1px solid '+(gates===n?C.cyan:C.border),
                 background:gates===n?C.cyan+'18':C.surf,
                 color:gates===n?C.cyan:C.muted,transition:'all .15s'}}>{n}</button>
@@ -1066,12 +1066,12 @@ const InjectionClamp = ({onBack}) => {
             <input type="number" min="1" max="12" value={gates}
               onChange={e=>setGates(Math.min(12,Math.max(1,parseInt(e.target.value)||1)))}
               style={{width:46,background:C.cyan+'11',border:'1px solid '+C.cyan+'44',borderRadius:8,
-                color:C.cyan,padding:'7px 5px',fontSize:12,fontFamily:"'Share Tech Mono'",
+                color:C.cyan,padding:'7px 5px',fontSize:18,fontFamily:"'Share Tech Mono'",
                 fontWeight:700,textAlign:'center',outline:'none'}}/>
           </div>
           {gates>1&&calc&&(
             <div style={{background:C.green+'0a',border:'1px solid '+C.green+'22',borderRadius:8,
-              padding:'7px 12px',marginBottom:8,color:C.green,fontFamily:"'Share Tech Mono'",fontSize:11}}>
+              padding:'7px 12px',marginBottom:8,color:C.green,fontFamily:"'Share Tech Mono'",fontSize:15}}>
               {calc.Lraw+'mm → '+calc.Leff+'mm (-'+Math.round((1-1/Math.sqrt(gates))*100)+'%)'}
             </div>
           )}
@@ -1082,12 +1082,12 @@ const InjectionClamp = ({onBack}) => {
             <input value={pName} onChange={e=>setPName(e.target.value)}
               placeholder="שם מוצר..."
               style={{flex:1,background:C.surf,border:'1px solid '+C.borderB,borderRadius:9,
-                color:C.white,padding:'10px 12px',fontSize:13,fontFamily:"'Barlow'",outline:'none'}}/>
+                color:C.white,padding:'10px 12px',fontSize:15,fontFamily:"'Barlow'",outline:'none'}}/>
           </div>
           <button onClick={saveCalc} disabled={!calc}
             style={{width:'100%',padding:10,borderRadius:9,cursor:calc?'pointer':'default',minHeight:42,
               background:calc?C.green+'18':C.muted+'0a',border:'1px solid '+(calc?C.green+'44':C.border),
-              color:calc?C.green:C.muted,fontSize:13,fontFamily:"'Barlow'",
+              color:calc?C.green:C.muted,fontSize:15,fontFamily:"'Barlow'",
               display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
             ✓ שמור לרשומת היסטוריה
           </button>
@@ -1098,7 +1098,7 @@ const InjectionClamp = ({onBack}) => {
           <button onClick={()=>fileRef.current&&fileRef.current.click()}
             style={{width:'100%',padding:10,borderRadius:9,cursor:'pointer',minHeight:42,marginBottom:8,
               background:C.blue+'12',border:'1px solid '+C.blue+'44',color:C.blue,
-              fontSize:13,fontFamily:"'Barlow'",display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+              fontSize:15,fontFamily:"'Barlow'",display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
             ↑ העלה סרטוט / תמונה
           </button>
           {imgPrev&&(
@@ -1110,7 +1110,7 @@ const InjectionClamp = ({onBack}) => {
             <button onClick={runAI} disabled={aiLoad}
               style={{width:'100%',padding:10,borderRadius:9,cursor:aiLoad?'default':'pointer',minHeight:42,
                 background:aiLoad?C.muted+'0a':C.orange+'14',border:'1px solid '+(aiLoad?C.border:C.orange+'55'),
-                color:aiLoad?C.muted:C.orange,fontSize:13,fontFamily:"'Barlow'",
+                color:aiLoad?C.muted:C.orange,fontSize:15,fontFamily:"'Barlow'",
                 display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
               {aiLoad?'מנתח...':'✦ חלץ מידות עם AI'}
             </button>
@@ -1118,7 +1118,7 @@ const InjectionClamp = ({onBack}) => {
           {aiMsg&&(
             <div style={{background:aiMsg.ok?C.green+'10':C.yellow+'10',
               border:'1px solid '+(aiMsg.ok?C.green:C.yellow)+'33',borderRadius:8,padding:'8px 12px',marginTop:8}}>
-              <div style={{color:aiMsg.ok?C.green:C.yellow,fontSize:12}}>{aiMsg.text}</div>
+              <div style={{color:aiMsg.ok?C.green:C.yellow,fontSize:18}}>{aiMsg.text}</div>
             </div>
           )}
         </Card>}
